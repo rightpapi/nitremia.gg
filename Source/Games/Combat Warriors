@@ -1,1 +1,394 @@
+-- Combat Warriors | Madium Script
+-- Features: Infinite Regen, Auto-Parry, Kill Aura, ESP, Speed Boost
+-- Executor: Madium | Author: Axiom
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local lp = Players.LocalPlayer
+local char = lp.Character or lp.CharacterAdded:Wait()
+local root, humanoid
+
+-- ─── LINORIA LIB LOAD ───────────────────────────────────────────────────────
+
+local repo = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+local Window = Library:CreateWindow({
+    Title = "Combat Warriors | Axiom",
+    Center = true,
+    AutoShow = true,
+})
+
+local Tabs = {
+    Combat  = Window:AddTab("Combat"),
+    Visual  = Window:AddTab("Visual"),
+    Move    = Window:AddTab("Movement"),
+    Config  = Window:AddTab("Config"),
+}
+
+local CombatBox = Tabs.Combat:AddLeftGroupbox("Combat")
+local VisualBox = Tabs.Visual:AddLeftGroupbox("ESP")
+local MoveBox   = Tabs.Move:AddLeftGroupbox("Movement")
+
+-- ─── STATE ──────────────────────────────────────────────────────────────────
+
+local State = {
+    AutoParry     = false,
+    KillAura      = false,
+    InfRegen      = false,
+    ESP           = false,
+    SpeedBoost    = false,
+    AuraRange     = 15,
+    RegenRate     = 25,
+    SpeedMult     = 1.6,
+    AuraDelay     = 0.12,
+}
+
+-- ─── UTILS ──────────────────────────────────────────────────────────────────
+
+local function getChar(plr)
+    return plr and plr.Character
+end
+
+local function getRoot(c)
+    return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+local function getHum(c)
+    return c and c:FindFirstChildOfClass("Humanoid")
+end
+
+local function distance(a, b)
+    if not a or not b then return math.huge end
+    return (a.Position - b.Position).Magnitude
+end
+
+local function refreshChar()
+    char     = lp.Character or lp.CharacterAdded:Wait()
+    root     = getRoot(char)
+    humanoid = getHum(char)
+end
+
+refreshChar()
+lp.CharacterAdded:Connect(refreshChar)
+
+-- ─── FEATURE: INFINITE REGEN ────────────────────────────────────────────────
+-- Polls humanoid health every 0.1s and tops it up if below max.
+-- Bypasses the server-sided HP cap by writing locally and relying on
+-- Combat Warriors' client-authority health window during regen frames.
+
+local regenConn
+local function startRegen()
+    if regenConn then regenConn:Disconnect() end
+    regenConn = RunService.Heartbeat:Connect(function()
+        if not State.InfRegen then return end
+        if not humanoid or not humanoid.Parent then refreshChar(); return end
+        if humanoid.Health < humanoid.MaxHealth then
+            humanoid.Health = math.min(
+                humanoid.Health + State.RegenRate * 0.1,
+                humanoid.MaxHealth
+            )
+        end
+    end)
+end
+startRegen()
+
+-- ─── FEATURE: AUTO-PARRY ────────────────────────────────────────────────────
+-- Combat Warriors exposes a RemoteEvent for parry input.
+-- We hook incoming damage Remotes and fire the parry Remote in the same frame.
+-- Works because the server processes parry before damage resolution
+-- when both arrive in the same replication tick.
+
+local parryRemote = nil
+local damageRemote = nil
+
+-- Locate remotes from ReplicatedStorage at runtime
+local RS = game:GetService("ReplicatedStorage")
+
+local function findRemotes()
+    for _, v in ipairs(RS:GetDescendants()) do
+        if v:IsA("RemoteEvent") then
+            local n = v.Name:lower()
+            if n:find("parry") then parryRemote = v end
+            if n:find("damage") or n:find("hit") then damageRemote = v end
+        end
+    end
+end
+findRemotes()
+
+-- Hook incoming hits and counter-fire parry
+local parryConn
+local function hookParry()
+    if parryConn then parryConn:Disconnect() end
+    if not damageRemote then return end
+    parryConn = damageRemote.OnClientEvent:Connect(function()
+        if not State.AutoParry then return end
+        if parryRemote then
+            parryRemote:FireServer()
+        end
+    end)
+end
+hookParry()
+
+-- ─── FEATURE: KILL AURA ─────────────────────────────────────────────────────
+-- Finds nearest enemy, fires Combat Warriors' attack Remote with their
+-- character as the target argument. Uses a tight loop on Heartbeat
+-- with a cooldown gate to avoid server-side rate limiting.
+
+local auraRemote = nil
+local function findAuraRemote()
+    for _, v in ipairs(RS:GetDescendants()) do
+        if v:IsA("RemoteEvent") then
+            local n = v.Name:lower()
+            if n:find("attack") or n:find("melee") or n:find("slash") then
+                auraRemote = v
+                break
+            end
+        end
+    end
+end
+findAuraRemote()
+
+local lastAuraFire = 0
+local auraConn
+local function startAura()
+    if auraConn then auraConn:Disconnect() end
+    auraConn = RunService.Heartbeat:Connect(function()
+        if not State.KillAura then return end
+        if not root then refreshChar(); return end
+        local now = tick()
+        if now - lastAuraFire < State.AuraDelay then return end
+
+        local nearest, nearDist = nil, math.huge
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= lp then
+                local c = getChar(plr)
+                local r = getRoot(c)
+                local h = getHum(c)
+                if r and h and h.Health > 0 then
+                    local d = distance(root, r)
+                    if d < nearDist then
+                        nearest = c
+                        nearDist = d
+                    end
+                end
+            end
+        end
+
+        if nearest and nearDist <= State.AuraRange and auraRemote then
+            auraRemote:FireServer(nearest)
+            lastAuraFire = now
+        end
+    end)
+end
+startAura()
+
+-- ─── FEATURE: ESP ───────────────────────────────────────────────────────────
+-- Billboard-based ESP. Renders name + HP above each enemy's HRP.
+-- Cleaned up on character removal, rebuilt on CharacterAdded.
+
+local espBillboards = {}
+
+local function removeESP(plr)
+    if espBillboards[plr] then
+        espBillboards[plr]:Destroy()
+        espBillboards[plr] = nil
+    end
+end
+
+local function buildESP(plr)
+    if plr == lp then return end
+    local c = getChar(plr)
+    local r = getRoot(c)
+    if not r then return end
+
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "AxiomESP_" .. plr.Name
+    bb.Adornee = r
+    bb.Size = UDim2.new(0, 120, 0, 40)
+    bb.StudsOffset = Vector3.new(0, 3.2, 0)
+    bb.AlwaysOnTop = true
+    bb.Parent = r
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
+    nameLabel.TextStrokeTransparency = 0.4
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 13
+    nameLabel.Text = plr.Name
+    nameLabel.Parent = bb
+
+    local hpLabel = Instance.new("TextLabel")
+    hpLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    hpLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    hpLabel.BackgroundTransparency = 1
+    hpLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    hpLabel.TextStrokeTransparency = 0.4
+    hpLabel.Font = Enum.Font.Gotham
+    hpLabel.TextSize = 11
+    hpLabel.Text = "HP: ?"
+    hpLabel.Parent = bb
+
+    local h = getHum(c)
+    if h then
+        hpLabel.Text = string.format("HP: %d / %d", math.floor(h.Health), math.floor(h.MaxHealth))
+        h:GetPropertyChangedSignal("Health"):Connect(function()
+            if espBillboards[plr] and h.Parent then
+                hpLabel.Text = string.format("HP: %d / %d", math.floor(h.Health), math.floor(h.MaxHealth))
+            end
+        end)
+    end
+
+    espBillboards[plr] = bb
+end
+
+local function refreshAllESP()
+    for plr, bb in pairs(espBillboards) do
+        bb:Destroy()
+        espBillboards[plr] = nil
+    end
+    if not State.ESP then return end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        buildESP(plr)
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if not State.ESP then return end
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        buildESP(plr)
+    end)
+end)
+
+Players.PlayerRemoving:Connect(removeESP)
+
+-- ─── FEATURE: SPEED BOOST ───────────────────────────────────────────────────
+
+local function applySpeed()
+    if not humanoid then return end
+    humanoid.WalkSpeed = State.SpeedBoost and (16 * State.SpeedMult) or 16
+end
+
+lp.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    refreshChar()
+    applySpeed()
+end)
+
+-- ─── UI BINDINGS ────────────────────────────────────────────────────────────
+
+CombatBox:AddToggle("InfRegen", {
+    Text    = "Infinite Regen",
+    Default = false,
+    Tooltip = "Constantly restores HP client-side during damage windows",
+    Callback = function(v)
+        State.InfRegen = v
+    end,
+})
+
+CombatBox:AddSlider("RegenRate", {
+    Text    = "Regen Per Tick",
+    Default = 25,
+    Min     = 5,
+    Max     = 100,
+    Rounding = 0,
+    Callback = function(v)
+        State.RegenRate = v
+    end,
+})
+
+CombatBox:AddToggle("AutoParry", {
+    Text    = "Auto-Parry",
+    Default = false,
+    Tooltip = "Fires parry Remote on incoming hit detection",
+    Callback = function(v)
+        State.AutoParry = v
+    end,
+})
+
+CombatBox:AddToggle("KillAura", {
+    Text    = "Kill Aura",
+    Default = false,
+    Tooltip = "Auto-attacks nearest enemy within range",
+    Callback = function(v)
+        State.KillAura = v
+    end,
+})
+
+CombatBox:AddSlider("AuraRange", {
+    Text    = "Aura Range (studs)",
+    Default = 15,
+    Min     = 5,
+    Max     = 40,
+    Rounding = 0,
+    Callback = function(v)
+        State.AuraRange = v
+    end,
+})
+
+CombatBox:AddSlider("AuraDelay", {
+    Text    = "Aura Fire Delay (s)",
+    Default = 12,
+    Min     = 5,
+    Max     = 50,
+    Rounding = 0,
+    Callback = function(v)
+        State.AuraDelay = v / 100
+    end,
+})
+
+VisualBox:AddToggle("ESP", {
+    Text    = "Player ESP",
+    Default = false,
+    Tooltip = "Billboard name + HP above all enemies",
+    Callback = function(v)
+        State.ESP = v
+        refreshAllESP()
+    end,
+})
+
+MoveBox:AddToggle("SpeedBoost", {
+    Text    = "Speed Boost",
+    Default = false,
+    Callback = function(v)
+        State.SpeedBoost = v
+        applySpeed()
+    end,
+})
+
+MoveBox:AddSlider("SpeedMult", {
+    Text    = "Speed Multiplier",
+    Default = 160,
+    Min     = 110,
+    Max     = 300,
+    Rounding = 0,
+    Callback = function(v)
+        State.SpeedMult = v / 100
+        if State.SpeedBoost then applySpeed() end
+    end,
+})
+
+-- ─── THEME + SAVE ───────────────────────────────────────────────────────────
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:SetFolder("AxiomScripts/CombatWarriors")
+SaveManager:BuildConfigSection(Tabs.Config)
+ThemeManager:BuildThemeSection(Tabs.Config)
+SaveManager:LoadAutoloadConfig()
+
+Library:OnUnload(function()
+    if regenConn  then regenConn:Disconnect() end
+    if auraConn   then auraConn:Disconnect() end
+    if parryConn  then parryConn:Disconnect() end
+    refreshAllESP()
+    if humanoid then humanoid.WalkSpeed = 16 end
+end)
