@@ -1,959 +1,394 @@
--- Field Ops v2.7 — UI priority fix
--- Tabs forced white + larger, ESP solid, RightCtrl works, Trigger under Combat
+-- Combat Warriors | Madium Script
+-- Features: Infinite Regen, Auto-Parry, Kill Aura, ESP, Speed Boost
+-- Executor: Madium | Author: Axiom
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
+local lp = Players.LocalPlayer
+local char = lp.Character or lp.CharacterAdded:Wait()
+local root, humanoid
 
-local CFG = {
-    AimbotEnabled = false, AimbotKey = Enum.KeyCode.E, AimbotPart = "Head",
-    AimbotSmoothing = 0.15, AimbotFOV = 200, AimbotTeamCheck = true, AimbotVisCheck = false,
-    AimbotPrediction = true, AimbotBulletSpeed = 920, AimbotPredictMult = 1.08,
+-- ─── LINORIA LIB LOAD ───────────────────────────────────────────────────────
 
-    SilentAimEnabled = false, SilentAimPart = "Head", SilentAimFOV = 250, SilentAimHitChance = 100,
-    SilentAimPrediction = true, SilentAimBulletSpeed = 920, SilentAimPredictMult = 1.08,
-    SilentAimSticky = true, SilentAimTeamCheck = true, SilentAimVisCheck = false, SilentAimMethod = "Both",
+local repo = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
-    TriggerBot = false, TriggerBotKey = Enum.KeyCode.Q,
+local Window = Library:CreateWindow({
+    Title = "Combat Warriors | Axiom",
+    Center = true,
+    AutoShow = true,
+})
 
-    ESPEnabled = false, ESPBoxes = true, ESPNames = true, ESPHealth = true, ESPDistance = true,
-    ESPTracers = false, ESPMaxDist = 1100, ESPTeamColor = true, ESPShowTeam = false,
-    ESPNameSize = 13, ESPBoxThickness = 1.5,
-
-    SpeedEnabled = false, SpeedMult = 1.35, NoclipEnabled = false,
-
-    InfAmmoEnabled = false, GodModeEnabled = false, NoDigCooldown = false, FullbrightEnabled = false,
-
-    FOVCircleEnabled = true, FOVCircleColor = Color3.fromRGB(214,156,33),
-    FOVCircleThickness = 1.6, FOVCircleTrans = 0.2, FOVCircleFill = false,
-    ShowWatermark = true, ShowKeybinds = true, ShowNotifs = true,
-
-    UITheme = "Iron", UIScale = 1.0, UIOpacity = 0.94,
+local Tabs = {
+    Combat  = Window:AddTab("Combat"),
+    Visual  = Window:AddTab("Visual"),
+    Move    = Window:AddTab("Movement"),
+    Config  = Window:AddTab("Config"),
 }
 
-local THEMES = {
-    Iron = {bg=Color3.fromRGB(28,28,24),light=Color3.fromRGB(40,40,34),mid=Color3.fromRGB(52,52,44),edge=Color3.fromRGB(16,16,14),accent=Color3.fromRGB(214,156,33),text=Color3.fromRGB(235,225,200),dim=Color3.fromRGB(160,150,130)},
-    Night = {bg=Color3.fromRGB(16,18,26),light=Color3.fromRGB(26,30,40),mid=Color3.fromRGB(36,42,56),edge=Color3.fromRGB(10,12,18),accent=Color3.fromRGB(90,160,255),text=Color3.fromRGB(220,230,245),dim=Color3.fromRGB(130,150,180)},
-    Blood = {bg=Color3.fromRGB(30,16,16),light=Color3.fromRGB(44,24,24),mid=Color3.fromRGB(58,30,30),edge=Color3.fromRGB(18,8,8),accent=Color3.fromRGB(220,55,55),text=Color3.fromRGB(245,215,215),dim=Color3.fromRGB(170,120,120)},
-    Olive = {bg=Color3.fromRGB(22,26,20),light=Color3.fromRGB(32,38,28),mid=Color3.fromRGB(44,52,38),edge=Color3.fromRGB(12,16,10),accent=Color3.fromRGB(150,190,70),text=Color3.fromRGB(225,235,205),dim=Color3.fromRGB(140,160,120)},
+local CombatBox = Tabs.Combat:AddLeftGroupbox("Combat")
+local VisualBox = Tabs.Visual:AddLeftGroupbox("ESP")
+local MoveBox   = Tabs.Move:AddLeftGroupbox("Movement")
+
+-- ─── STATE ──────────────────────────────────────────────────────────────────
+
+local State = {
+    AutoParry     = false,
+    KillAura      = false,
+    InfRegen      = false,
+    ESP           = false,
+    SpeedBoost    = false,
+    AuraRange     = 15,
+    RegenRate     = 25,
+    SpeedMult     = 1.6,
+    AuraDelay     = 0.12,
 }
-local function T() return THEMES[CFG.UITheme] or THEMES.Iron end
 
-local function GetGuiParent()
-    local ok,res = pcall(function() if gethui then return gethui() end end)
-    if ok and res then return res end
-    ok,res = pcall(function() return CoreGui end)
-    if ok and res then return res end
-    return LocalPlayer:WaitForChild("PlayerGui")
+-- ─── UTILS ──────────────────────────────────────────────────────────────────
+
+local function getChar(plr)
+    return plr and plr.Character
 end
 
-local function IsEnemy(p)
-    if not p or p == LocalPlayer then return false end
-    if (CFG.AimbotTeamCheck or CFG.SilentAimTeamCheck) and p.Team and LocalPlayer.Team and p.Team == LocalPlayer.Team then return false end
-    return true
-end
-local function GetChar(p) return p and p.Character end
-local function GetRoot(p) local c=GetChar(p) return c and c:FindFirstChild("HumanoidRootPart") end
-local function GetHum(p) local c=GetChar(p) return c and c:FindFirstChildOfClass("Humanoid") end
-local function GetPart(p,n) local c=GetChar(p) if not c then return nil end return c:FindFirstChild(n) or c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso") end
-local function Alive(p) local h=GetHum(p) return h and h.Health > 0 end
-local function W2V(pos) local s,on = Camera:WorldToViewportPoint(pos) return Vector2.new(s.X,s.Y),on end
-local function FOVDist(sp) return (sp - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude end
-local function Visible(o,t)
-    local params = RaycastParams.new()
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    local f = {}
-    for _,pl in ipairs(Players:GetPlayers()) do if pl.Character then table.insert(f,pl.Character) end end
-    params.FilterDescendantsInstances = f
-    return Workspace:Raycast(o, t-o, params) == nil
-end
-local function Predict(part,speed,mult)
-    if not part then return nil end
-    local root = part.Parent and part.Parent:FindFirstChild("HumanoidRootPart")
-    local vel = root and root.AssemblyLinearVelocity or Vector3.zero
-    local dist = (part.Position - Camera.CFrame.Position).Magnitude
-    return part.Position + vel * (dist / math.max(speed,40)) * mult
+local function getRoot(c)
+    return c and c:FindFirstChild("HumanoidRootPart")
 end
 
-local function Notify(msg)
-    if not CFG.ShowNotifs then return end
-    local ok,d = pcall(Drawing.new, "Text")
-    if not ok or not d then return end
-    d.Text = msg d.Size = 16 d.Center = true d.Outline = true d.OutlineColor = Color3.new(0,0,0)
-    d.Color = T().accent d.Position = Vector2.new(Camera.ViewportSize.X/2, 55) d.Visible = true
-    task.delay(1.4, function() pcall(function() d:Remove() end) end)
+local function getHum(c)
+    return c and c:FindFirstChildOfClass("Humanoid")
 end
 
--- Drawing + solid ESP
-local Drawings = {}
-local function NewDraw(class, props)
-    local ok,o = pcall(Drawing.new, class)
-    if not ok or not o then return nil end
-    for k,v in pairs(props or {}) do pcall(function() o[k]=v end) end
-    table.insert(Drawings, o)
-    return o
+local function distance(a, b)
+    if not a or not b then return math.huge end
+    return (a.Position - b.Position).Magnitude
 end
 
-local FOVCircle = NewDraw("Circle", {Visible=false, Thickness=1.6, Filled=false, NumSides=64})
-local Watermark = NewDraw("Text", {Visible=false, Size=14, Center=false, Outline=true, OutlineColor=Color3.new(0,0,0)})
-local KeybindText = NewDraw("Text", {Visible=false, Size=13, Center=false, Outline=true, OutlineColor=Color3.new(0,0,0)})
-
-local ESPCache = {}
-local function ESPColor(p)
-    if CFG.ESPTeamColor then
-        return (p.Team == LocalPlayer.Team) and Color3.fromRGB(0,190,255) or Color3.fromRGB(255,55,55)
-    end
-    return Color3.fromRGB(255,255,255)
-end
-local function MakeESP(p)
-    if ESPCache[p] then return end
-    ESPCache[p] = {
-        Box = NewDraw("Square", {Visible=false, Thickness=CFG.ESPBoxThickness, Filled=false}),
-        Name = NewDraw("Text", {Visible=false, Size=CFG.ESPNameSize, Center=true, Outline=true, OutlineColor=Color3.new(0,0,0)}),
-        Health = NewDraw("Square", {Visible=false, Thickness=1, Filled=true}),
-        HealthBG = NewDraw("Square", {Visible=false, Thickness=1, Filled=true, Color=Color3.fromRGB(30,30,30)}),
-        Dist = NewDraw("Text", {Visible=false, Size=11, Center=true, Outline=true, OutlineColor=Color3.new(0,0,0)}),
-        Tracer = NewDraw("Line", {Visible=false, Thickness=1}),
-    }
-end
-local function HideESP(p)
-    local e = ESPCache[p] if not e then return end
-    for _,o in pairs(e) do pcall(function() o.Visible = false end) end
-end
-local function KillESP(p)
-    local e = ESPCache[p] if not e then return end
-    for _,o in pairs(e) do pcall(function() o:Remove() end) end
-    ESPCache[p] = nil
+local function refreshChar()
+    char     = lp.Character or lp.CharacterAdded:Wait()
+    root     = getRoot(char)
+    humanoid = getHum(char)
 end
 
-local function UpdateESP()
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p == LocalPlayer then continue end
-        if not CFG.ESPShowTeam and not IsEnemy(p) then HideESP(p) continue end
-        MakeESP(p)
-        local e = ESPCache[p] if not e then continue end
-        if not CFG.ESPEnabled or not Alive(p) then HideESP(p) continue end
-        local root, hum, char = GetRoot(p), GetHum(p), GetChar(p)
-        if not root or not hum or not char then HideESP(p) continue end
-        local dist = (Camera.CFrame.Position - root.Position).Magnitude
-        if dist > CFG.ESPMaxDist then HideESP(p) continue end
+refreshChar()
+lp.CharacterAdded:Connect(refreshChar)
 
-        local head = char:FindFirstChild("Head")
-        local top = head and head.Position + Vector3.new(0, head.Size.Y/2 + 0.12, 0) or root.Position + Vector3.new(0, 3.1, 0)
-        local bot = root.Position - Vector3.new(0, 3, 0)
-        local topS, topOn = W2V(top)
-        local botS, botOn = W2V(bot)
-        if not topOn and not botOn then HideESP(p) continue end
+-- ─── FEATURE: INFINITE REGEN ────────────────────────────────────────────────
+-- Polls humanoid health every 0.1s and tops it up if below max.
+-- Bypasses the server-sided HP cap by writing locally and relying on
+-- Combat Warriors' client-authority health window during regen frames.
 
-        local h = math.abs(topS.Y - botS.Y)
-        local w = h * 0.55
-        local x, y = topS.X - w/2, topS.Y
-        local col = ESPColor(p)
-
-        if CFG.ESPBoxes and e.Box then
-            e.Box.Visible = true
-            e.Box.Color = col
-            e.Box.Thickness = CFG.ESPBoxThickness
-            e.Box.Size = Vector2.new(w, h)
-            e.Box.Position = Vector2.new(x, y)
-            e.Box.Transparency = 0
-        elseif e.Box then e.Box.Visible = false end
-
-        if CFG.ESPNames and e.Name then
-            e.Name.Visible = true
-            e.Name.Color = col
-            e.Name.Size = CFG.ESPNameSize
-            e.Name.Text = p.Name
-            e.Name.Position = Vector2.new(topS.X, y - 16)
-            e.Name.Transparency = 0
-        elseif e.Name then e.Name.Visible = false end
-
-        if CFG.ESPDistance and e.Dist then
-            e.Dist.Visible = true
-            e.Dist.Text = string.format("[%dm]", math.floor(dist/4))
-            e.Dist.Position = Vector2.new(topS.X, botS.Y + 2)
-            e.Dist.Transparency = 0
-        elseif e.Dist then e.Dist.Visible = false end
-
-        if CFG.ESPHealth and e.Health and e.HealthBG then
-            local ratio = math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1)
-            e.HealthBG.Visible = true
-            e.HealthBG.Size = Vector2.new(3, h)
-            e.HealthBG.Position = Vector2.new(x - 6, y)
-            e.Health.Visible = true
-            e.Health.Size = Vector2.new(3, h * ratio)
-            e.Health.Position = Vector2.new(x - 6, y + h * (1 - ratio))
-            e.Health.Color = Color3.fromRGB(math.floor(255*(1-ratio)), math.floor(255*ratio), 0)
-        else
-            if e.Health then e.Health.Visible = false end
-            if e.HealthBG then e.HealthBG.Visible = false end
+local regenConn
+local function startRegen()
+    if regenConn then regenConn:Disconnect() end
+    regenConn = RunService.Heartbeat:Connect(function()
+        if not State.InfRegen then return end
+        if not humanoid or not humanoid.Parent then refreshChar(); return end
+        if humanoid.Health < humanoid.MaxHealth then
+            humanoid.Health = math.min(
+                humanoid.Health + State.RegenRate * 0.1,
+                humanoid.MaxHealth
+            )
         end
+    end)
+end
+startRegen()
 
-        if CFG.ESPTracers and e.Tracer then
-            e.Tracer.Visible = true
-            e.Tracer.Color = col
-            e.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-            e.Tracer.To = botS
-            e.Tracer.Transparency = 0
-        elseif e.Tracer then e.Tracer.Visible = false end
+-- ─── FEATURE: AUTO-PARRY ────────────────────────────────────────────────────
+-- Combat Warriors exposes a RemoteEvent for parry input.
+-- We hook incoming damage Remotes and fire the parry Remote in the same frame.
+-- Works because the server processes parry before damage resolution
+-- when both arrive in the same replication tick.
+
+local parryRemote = nil
+local damageRemote = nil
+
+-- Locate remotes from ReplicatedStorage at runtime
+local RS = game:GetService("ReplicatedStorage")
+
+local function findRemotes()
+    for _, v in ipairs(RS:GetDescendants()) do
+        if v:IsA("RemoteEvent") then
+            local n = v.Name:lower()
+            if n:find("parry") then parryRemote = v end
+            if n:find("damage") or n:find("hit") then damageRemote = v end
+        end
     end
 end
+findRemotes()
 
-Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() task.wait(0.5) MakeESP(p) end) end)
-Players.PlayerRemoving:Connect(KillESP)
-for _,p in ipairs(Players:GetPlayers()) do if p ~= LocalPlayer then MakeESP(p) end end
+-- Hook incoming hits and counter-fire parry
+local parryConn
+local function hookParry()
+    if parryConn then parryConn:Disconnect() end
+    if not damageRemote then return end
+    parryConn = damageRemote.OnClientEvent:Connect(function()
+        if not State.AutoParry then return end
+        if parryRemote then
+            parryRemote:FireServer()
+        end
+    end)
+end
+hookParry()
 
--- Targeting + Silent (kept for completeness)
-local Sticky = nil
-local function GetClosest(silent)
-    local fov = silent and CFG.SilentAimFOV or CFG.AimbotFOV
-    local partN = silent and CFG.SilentAimPart or CFG.AimbotPart
-    local pred = silent and CFG.SilentAimPrediction or CFG.AimbotPrediction
-    local spd = silent and CFG.SilentAimBulletSpeed or CFG.AimbotBulletSpeed
-    local mult = silent and CFG.SilentAimPredictMult or CFG.AimbotPredictMult
-    local vis = silent and CFG.SilentAimVisCheck or CFG.AimbotVisCheck
+-- ─── FEATURE: KILL AURA ─────────────────────────────────────────────────────
+-- Finds nearest enemy, fires Combat Warriors' attack Remote with their
+-- character as the target argument. Uses a tight loop on Heartbeat
+-- with a cooldown gate to avoid server-side rate limiting.
 
-    if silent and CFG.SilentAimSticky and Sticky and Alive(Sticky) and IsEnemy(Sticky) then
-        local part = GetPart(Sticky, partN)
-        if part then
-            local pos = pred and Predict(part, spd, mult) or part.Position
-            local sp, on = W2V(pos)
-            if on and FOVDist(sp) <= fov and (not vis or Visible(Camera.CFrame.Position, pos)) then
-                return Sticky, pos
+local auraRemote = nil
+local function findAuraRemote()
+    for _, v in ipairs(RS:GetDescendants()) do
+        if v:IsA("RemoteEvent") then
+            local n = v.Name:lower()
+            if n:find("attack") or n:find("melee") or n:find("slash") then
+                auraRemote = v
+                break
             end
         end
-        Sticky = nil
     end
-
-    local best, bestD, bestPos = nil, math.huge, nil
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p == LocalPlayer or not IsEnemy(p) or not Alive(p) then continue end
-        local part = GetPart(p, partN) if not part then continue end
-        local pos = pred and Predict(part, spd, mult) or part.Position
-        local sp, on = W2V(pos) if not on then continue end
-        local d = FOVDist(sp) if d > fov then continue end
-        if vis and not Visible(Camera.CFrame.Position, pos) then continue end
-        if d < bestD then bestD = d best = p bestPos = pos end
-    end
-    if silent and CFG.SilentAimSticky then Sticky = best end
-    return best, bestPos
 end
+findAuraRemote()
 
-local SilentOn = false
-local oldIndex, oldNamecall
-local function EnableSilent()
-    if SilentOn then return end
-    local ok, mt = pcall(getrawmetatable, game)
-    if ok and mt then
-        oldIndex = mt.__index
-        pcall(setreadonly, mt, false)
-        mt.__index = newcclosure(function(self, key)
-            if CFG.SilentAimEnabled and (CFG.SilentAimMethod == "Mouse" or CFG.SilentAimMethod == "Both") then
-                if self == Mouse and key == "Hit" then
-                    if math.random(1,100) > CFG.SilentAimHitChance then return oldIndex(self, key) end
-                    local _, pos = GetClosest(true)
-                    if pos then return CFrame.new(pos) end
-                end
-            end
-            return oldIndex(self, key)
-        end)
-        pcall(setreadonly, mt, true)
-    end
-    pcall(function()
-        local camMt = getrawmetatable(Camera)
-        if camMt then
-            oldNamecall = camMt.__namecall
-            pcall(setreadonly, camMt, false)
-            camMt.__namecall = newcclosure(function(self, ...)
-                local method = getnamecallmethod()
-                if CFG.SilentAimEnabled and (CFG.SilentAimMethod == "Ray" or CFG.SilentAimMethod == "Both") then
-                    if method == "ScreenPointToRay" or method == "ViewportPointToRay" then
-                        if math.random(1,100) <= CFG.SilentAimHitChance then
-                            local _, pos = GetClosest(true)
-                            if pos then
-                                local origin = Camera.CFrame.Position
-                                return Ray.new(origin, (pos - origin).Unit * 1000)
-                            end
-                        end
+local lastAuraFire = 0
+local auraConn
+local function startAura()
+    if auraConn then auraConn:Disconnect() end
+    auraConn = RunService.Heartbeat:Connect(function()
+        if not State.KillAura then return end
+        if not root then refreshChar(); return end
+        local now = tick()
+        if now - lastAuraFire < State.AuraDelay then return end
+
+        local nearest, nearDist = nil, math.huge
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= lp then
+                local c = getChar(plr)
+                local r = getRoot(c)
+                local h = getHum(c)
+                if r and h and h.Health > 0 then
+                    local d = distance(root, r)
+                    if d < nearDist then
+                        nearest = c
+                        nearDist = d
                     end
                 end
-                return oldNamecall(self, ...)
-            end)
-            pcall(setreadonly, camMt, true)
-        end
-    end)
-    SilentOn = true
-    Notify("Silent Aim ON")
-end
-local function DisableSilent()
-    if not SilentOn then return end
-    pcall(function()
-        local mt = getrawmetatable(game)
-        if mt and oldIndex then setreadonly(mt, false) mt.__index = oldIndex setreadonly(mt, true) end
-    end)
-    pcall(function()
-        local camMt = getrawmetatable(Camera)
-        if camMt and oldNamecall then setreadonly(camMt, false) camMt.__namecall = oldNamecall setreadonly(camMt, true) end
-    end)
-    SilentOn = false
-    Sticky = nil
-    Notify("Silent Aim OFF")
-end
-
--- Speed / God / Dig / Ammo / Noclip (unchanged safe versions)
-local SpeedConn
-local function StartSpeed()
-    if SpeedConn then return end
-    SpeedConn = RunService.Heartbeat:Connect(function()
-        if not CFG.SpeedEnabled then return end
-        local char = LocalPlayer.Character if not char then return end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not root or not hum or hum.Health <= 0 then return end
-        local dir = hum.MoveDirection if dir.Magnitude < 0.05 then return end
-        local extra = dir.Unit * (16 * (CFG.SpeedMult - 1))
-        root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X + extra.X, root.AssemblyLinearVelocity.Y, root.AssemblyLinearVelocity.Z + extra.Z)
-    end)
-end
-local function StopSpeed() if SpeedConn then SpeedConn:Disconnect() SpeedConn = nil end end
-
-local GodConn
-local function EnableGod()
-    local hum = GetHum(LocalPlayer) if not hum then return end
-    if GodConn then GodConn:Disconnect() end
-    GodConn = hum.HealthChanged:Connect(function()
-        if CFG.GodModeEnabled and hum.Health < hum.MaxHealth then hum.Health = hum.MaxHealth end
-    end)
-end
-local function DisableGod() if GodConn then GodConn:Disconnect() GodConn = nil end end
-
-local function PatchDig()
-    local char = LocalPlayer.Character if not char then return end
-    local function zero(parent)
-        for _,v in ipairs(parent:GetDescendants()) do
-            if v:IsA("NumberValue") or v:IsA("IntValue") then
-                local n = v.Name:lower()
-                if n:find("cool") or n:find("cd") or n:find("delay") or n:find("timer") or n:find("dig") then
-                    pcall(function() v.Value = 0 end)
-                    v.Changed:Connect(function() if CFG.NoDigCooldown and v.Value > 0 then pcall(function() v.Value = 0 end) end end)
-                end
             end
         end
+
+        if nearest and nearDist <= State.AuraRange and auraRemote then
+            auraRemote:FireServer(nearest)
+            lastAuraFire = now
+        end
+    end)
+end
+startAura()
+
+-- ─── FEATURE: ESP ───────────────────────────────────────────────────────────
+-- Billboard-based ESP. Renders name + HP above each enemy's HRP.
+-- Cleaned up on character removal, rebuilt on CharacterAdded.
+
+local espBillboards = {}
+
+local function removeESP(plr)
+    if espBillboards[plr] then
+        espBillboards[plr]:Destroy()
+        espBillboards[plr] = nil
     end
-    zero(char)
-    for _,t in ipairs(LocalPlayer.Backpack:GetChildren()) do if t:IsA("Tool") then zero(t) end end
 end
 
-local function HookAmmo()
-    local char = LocalPlayer.Character if not char then return end
-    local function patch(tool)
-        for _,v in ipairs(tool:GetDescendants()) do
-            if v:IsA("IntValue") or v:IsA("NumberValue") then
-                local n = v.Name:lower()
-                if n:find("ammo") or n:find("bullet") or n:find("round") or n:find("mag") or n:find("clip") then
-                    if CFG.InfAmmoEnabled then pcall(function() v.Value = 999 end) end
-                    v.Changed:Connect(function() if CFG.InfAmmoEnabled and v.Value < 999 then pcall(function() v.Value = 999 end) end end)
-                end
+local function buildESP(plr)
+    if plr == lp then return end
+    local c = getChar(plr)
+    local r = getRoot(c)
+    if not r then return end
+
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "AxiomESP_" .. plr.Name
+    bb.Adornee = r
+    bb.Size = UDim2.new(0, 120, 0, 40)
+    bb.StudsOffset = Vector3.new(0, 3.2, 0)
+    bb.AlwaysOnTop = true
+    bb.Parent = r
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
+    nameLabel.TextStrokeTransparency = 0.4
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 13
+    nameLabel.Text = plr.Name
+    nameLabel.Parent = bb
+
+    local hpLabel = Instance.new("TextLabel")
+    hpLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    hpLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    hpLabel.BackgroundTransparency = 1
+    hpLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    hpLabel.TextStrokeTransparency = 0.4
+    hpLabel.Font = Enum.Font.Gotham
+    hpLabel.TextSize = 11
+    hpLabel.Text = "HP: ?"
+    hpLabel.Parent = bb
+
+    local h = getHum(c)
+    if h then
+        hpLabel.Text = string.format("HP: %d / %d", math.floor(h.Health), math.floor(h.MaxHealth))
+        h:GetPropertyChangedSignal("Health"):Connect(function()
+            if espBillboards[plr] and h.Parent then
+                hpLabel.Text = string.format("HP: %d / %d", math.floor(h.Health), math.floor(h.MaxHealth))
             end
-        end
-    end
-    local tool = char:FindFirstChildOfClass("Tool") if tool then patch(tool) end
-    for _,t in ipairs(LocalPlayer.Backpack:GetChildren()) do if t:IsA("Tool") then patch(t) end end
-end
-
-local NoclipConn
-local function EnableNoclip()
-    if NoclipConn then return end
-    NoclipConn = RunService.Stepped:Connect(function()
-        if not CFG.NoclipEnabled then return end
-        local char = LocalPlayer.Character if not char then return end
-        for _,p in ipairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
-    end)
-end
-local function DisableNoclip() if NoclipConn then NoclipConn:Disconnect() NoclipConn = nil end end
-
-local function SetFullbright(on)
-    if on then
-        Lighting.Brightness = 2 Lighting.ClockTime = 14 Lighting.FogEnd = 1e5
-        Lighting.GlobalShadows = false Lighting.Ambient = Color3.new(1,1,1) Lighting.OutdoorAmbient = Color3.new(1,1,1)
-    else
-        Lighting.Brightness = 1 Lighting.GlobalShadows = true
-        Lighting.Ambient = Color3.new(0.5,0.5,0.5) Lighting.OutdoorAmbient = Color3.new(0.5,0.5,0.5)
-    end
-end
-
-local function OnChar(char)
-    task.wait(1.0)
-    if CFG.GodModeEnabled then EnableGod() end
-    if CFG.InfAmmoEnabled then HookAmmo() end
-    if CFG.NoDigCooldown then PatchDig() end
-    if CFG.SpeedEnabled then StartSpeed() end
-    if CFG.SilentAimEnabled then DisableSilent() task.wait(0.1) EnableSilent() end
-end
-LocalPlayer.CharacterAdded:Connect(OnChar)
-if LocalPlayer.Character then task.spawn(OnChar, LocalPlayer.Character) end
-
-local AimHeld, TriggerHeld = false, false
-RunService.RenderStepped:Connect(function()
-    pcall(UpdateESP)
-
-    if FOVCircle then
-        local show = CFG.FOVCircleEnabled and (CFG.AimbotEnabled or CFG.SilentAimEnabled)
-        FOVCircle.Visible = show
-        if show then
-            FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-            FOVCircle.Radius = CFG.AimbotEnabled and CFG.AimbotFOV or CFG.SilentAimFOV
-            FOVCircle.Color = CFG.FOVCircleColor
-            FOVCircle.Thickness = CFG.FOVCircleThickness
-            FOVCircle.Transparency = CFG.FOVCircleTrans
-            FOVCircle.Filled = CFG.FOVCircleFill
-        end
-    end
-
-    if Watermark then
-        Watermark.Visible = CFG.ShowWatermark
-        if CFG.ShowWatermark then
-            Watermark.Text = "FIELD OPS  v2.7  |  " .. math.floor(Workspace:GetRealPhysicsFPS()) .. " fps"
-            Watermark.Position = Vector2.new(12, 8)
-            Watermark.Color = T().accent
-        end
-    end
-
-    if KeybindText then
-        KeybindText.Visible = CFG.ShowKeybinds
-        if CFG.ShowKeybinds then
-            local lines = {}
-            if CFG.AimbotEnabled then table.insert(lines, "[E] Aimbot") end
-            if CFG.SilentAimEnabled then table.insert(lines, "[SA] Silent") end
-            if CFG.SpeedEnabled then table.insert(lines, "[SPD] Speed") end
-            if CFG.TriggerBot then table.insert(lines, "[Q] Trigger") end
-            KeybindText.Text = table.concat(lines, "\n")
-            KeybindText.Position = Vector2.new(12, 28)
-            KeybindText.Color = T().text
-        end
-    end
-
-    if CFG.AimbotEnabled and AimHeld then
-        local _, pos = GetClosest(false)
-        if pos then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, pos), CFG.AimbotSmoothing) end
-    end
-
-    if CFG.TriggerBot and TriggerHeld then
-        if GetClosest(false) then pcall(function() mouse1click() end) end
-    end
-
-    if CFG.GodModeEnabled then
-        local hum = GetHum(LocalPlayer)
-        if hum and hum.Health < hum.MaxHealth then hum.Health = hum.MaxHealth end
-    end
-    if CFG.NoDigCooldown then pcall(PatchDig) end
-end)
-
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == CFG.AimbotKey then AimHeld = true end
-    if input.KeyCode == CFG.TriggerBotKey then TriggerHeld = true end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == CFG.AimbotKey then AimHeld = false end
-    if input.KeyCode == CFG.TriggerBotKey then TriggerHeld = false end
-end)
-
--- ===================== UI =====================
-local COL = T()
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EntSuite"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 999
-ScreenGui.Parent = GetGuiParent()
-
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.new(0, 500 * CFG.UIScale, 0, 640 * CFG.UIScale)
-Main.Position = UDim2.new(0, 50, 0, 20)
-Main.BackgroundColor3 = COL.bg
-Main.BackgroundTransparency = 1 - CFG.UIOpacity
-Main.BorderColor3 = COL.edge
-Main.BorderSizePixel = 2
-Main.Parent = ScreenGui
-
-local TopAccent = Instance.new("Frame")
-TopAccent.Size = UDim2.new(1,0,0,3)
-TopAccent.BackgroundColor3 = COL.accent
-TopAccent.BorderSizePixel = 0
-TopAccent.Parent = Main
-
-local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1,0,0,34)
-TitleBar.Position = UDim2.new(0,0,0,3)
-TitleBar.BackgroundColor3 = COL.mid
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = Main
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1,-50,1,0)
-Title.Position = UDim2.new(0,12,0,0)
-Title.BackgroundTransparency = 1
-Title.Text = "ENTRENCHED  //  FIELD OPS v2.7"
-Title.TextColor3 = COL.text
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 13
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TitleBar
-
-local dragging, dragStart, startPos
-TitleBar.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true dragStart = i.Position startPos = Main.Position
-    end
-end)
-TitleBar.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-UserInputService.InputChanged:Connect(function(i)
-    if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local d = i.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
-    end
-end)
-
-local TabScroll = Instance.new("ScrollingFrame")
-TabScroll.Size = UDim2.new(1,0,0,36)
-TabScroll.Position = UDim2.new(0,0,0,37)
-TabScroll.BackgroundColor3 = COL.edge
-TabScroll.BorderSizePixel = 0
-TabScroll.ScrollBarThickness = 2
-TabScroll.ScrollBarImageColor3 = COL.accent
-TabScroll.ScrollingDirection = Enum.ScrollingDirection.X
-TabScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
-TabScroll.Parent = Main
-
-local TabLayout = Instance.new("UIListLayout")
-TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Parent = TabScroll
-
-local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1,-16,1,-82)
-Content.Position = UDim2.new(0,8,0,78)
-Content.BackgroundTransparency = 1
-Content.ClipsDescendants = true
-Content.Parent = Main
-
-local TABS = {"COMBAT", "VISUALS", "MOVEMENT", "MISC", "SETTINGS"}
-local Panels, Buttons = {}, {}
-
-for i, name in ipairs(TABS) do
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 96, 1, 0)
-    b.BackgroundColor3 = COL.edge
-    b.BorderSizePixel = 0
-    b.Text = name
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 13
-    b.TextColor3 = Color3.new(1,1,1) -- forced pure white so it is always visible
-    b.LayoutOrder = i
-    b.Parent = TabScroll
-    Buttons[i] = b
-
-    local p = Instance.new("ScrollingFrame")
-    p.Size = UDim2.new(1,0,1,0)
-    p.BackgroundTransparency = 1
-    p.BorderSizePixel = 0
-    p.ScrollBarThickness = 3
-    p.ScrollBarImageColor3 = COL.accent
-    p.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    p.Visible = false
-    p.Parent = Content
-    Panels[i] = p
-end
-
-local function Switch(i)
-    for k, p in ipairs(Panels) do p.Visible = (k == i) end
-    for k, b in ipairs(Buttons) do
-        if k == i then
-            b.TextColor3 = COL.accent
-            b.BackgroundColor3 = COL.mid
-        else
-            b.TextColor3 = Color3.new(1,1,1)
-            b.BackgroundColor3 = COL.edge
-        end
-    end
-end
-for i, b in ipairs(Buttons) do b.MouseButton1Click:Connect(function() Switch(i) end) end
-
-local function Header(parent, text, y)
-    local br = Instance.new("Frame")
-    br.Size = UDim2.new(0,3,0,14)
-    br.Position = UDim2.new(0,0,0,y+4)
-    br.BackgroundColor3 = COL.accent
-    br.BorderSizePixel = 0
-    br.Parent = parent
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1,-12,0,22)
-    l.Position = UDim2.new(0,10,0,y)
-    l.BackgroundTransparency = 1
-    l.Text = "[ "..text.." ]"
-    l.TextColor3 = COL.text
-    l.Font = Enum.Font.GothamBold
-    l.TextSize = 12
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.Parent = parent
-end
-
-local function Toggle(parent, text, y, key, cb)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1,0,0,28)
-    row.Position = UDim2.new(0,0,0,y)
-    row.BackgroundColor3 = COL.light
-    row.BorderColor3 = COL.edge
-    row.BorderSizePixel = 1
-    row.Parent = parent
-
-    local led = Instance.new("Frame")
-    led.Size = UDim2.new(0,10,0,10)
-    led.AnchorPoint = Vector2.new(0,0.5)
-    led.Position = UDim2.new(0,10,0.5,0)
-    led.BackgroundColor3 = Color3.fromRGB(180,40,30)
-    led.BorderSizePixel = 1
-    led.Parent = row
-    Instance.new("UICorner", led).CornerRadius = UDim.new(1,0)
-
-    local lab = Instance.new("TextLabel")
-    lab.Size = UDim2.new(1,-80,1,0)
-    lab.Position = UDim2.new(0,28,0,0)
-    lab.BackgroundTransparency = 1
-    lab.Text = text
-    lab.TextColor3 = COL.text
-    lab.Font = Enum.Font.Gotham
-    lab.TextSize = 12
-    lab.TextXAlignment = Enum.TextXAlignment.Left
-    lab.Parent = row
-
-    local stamp = Instance.new("TextLabel")
-    stamp.Size = UDim2.new(0,36,0,18)
-    stamp.AnchorPoint = Vector2.new(1,0.5)
-    stamp.Position = UDim2.new(1,-6,0.5,0)
-    stamp.BackgroundColor3 = COL.mid
-    stamp.BorderColor3 = COL.edge
-    stamp.BorderSizePixel = 1
-    stamp.Text = "OFF"
-    stamp.TextColor3 = Color3.fromRGB(180,40,30)
-    stamp.Font = Enum.Font.GothamBold
-    stamp.TextSize = 10
-    stamp.Parent = row
-
-    local on = CFG[key] or false
-    local function refresh()
-        if on then
-            led.BackgroundColor3 = COL.accent
-            stamp.Text = "ON" stamp.TextColor3 = COL.accent
-        else
-            led.BackgroundColor3 = Color3.fromRGB(180,40,30)
-            stamp.Text = "OFF" stamp.TextColor3 = Color3.fromRGB(180,40,30)
-        end
-    end
-    refresh()
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1,0,1,0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = row
-    btn.MouseButton1Click:Connect(function()
-        on = not on CFG[key] = on refresh()
-        if cb then cb(on) end
-        if CFG.ShowNotifs then Notify(text .. (on and " ON" or " OFF")) end
-    end)
-end
-
-local function Slider(parent, text, y, key, minv, maxv, def, cb)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1,0,0,44)
-    row.Position = UDim2.new(0,0,0,y)
-    row.BackgroundColor3 = COL.light
-    row.BorderColor3 = COL.edge
-    row.BorderSizePixel = 1
-    row.Parent = parent
-
-    local lab = Instance.new("TextLabel")
-    lab.Size = UDim2.new(1,-60,0,18)
-    lab.Position = UDim2.new(0,10,0,2)
-    lab.BackgroundTransparency = 1
-    lab.Text = text
-    lab.TextColor3 = COL.text
-    lab.Font = Enum.Font.Gotham
-    lab.TextSize = 12
-    lab.TextXAlignment = Enum.TextXAlignment.Left
-    lab.Parent = row
-
-    local val = Instance.new("TextLabel")
-    val.Size = UDim2.new(0,50,0,18)
-    val.AnchorPoint = Vector2.new(1,0)
-    val.Position = UDim2.new(1,-4,0,2)
-    val.BackgroundColor3 = COL.mid
-    val.BorderColor3 = COL.edge
-    val.BorderSizePixel = 1
-    val.Text = tostring(def)
-    val.TextColor3 = COL.accent
-    val.Font = Enum.Font.Code
-    val.TextSize = 11
-    val.Parent = row
-
-    local track = Instance.new("Frame")
-    track.Size = UDim2.new(1,-20,0,8)
-    track.Position = UDim2.new(0,10,0,28)
-    track.BackgroundColor3 = Color3.fromRGB(20,20,18)
-    track.BorderColor3 = COL.edge
-    track.BorderSizePixel = 1
-    track.Parent = row
-
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new(0,0,1,0)
-    fill.BackgroundColor3 = COL.accent
-    fill.BorderSizePixel = 0
-    fill.Parent = track
-
-    local function set(v)
-        v = math.clamp(math.floor(v + 0.5), minv, maxv)
-        CFG[key] = v
-        local r = (v - minv) / math.max(maxv - minv, 1)
-        fill.Size = UDim2.new(r, 0, 1, 0)
-        val.Text = tostring(v)
-        if cb then cb(v) end
-    end
-    set(def)
-
-    local sliding = false
-    local hit = Instance.new("TextButton")
-    hit.Size = UDim2.new(1,0,1,0)
-    hit.BackgroundTransparency = 1
-    hit.Text = ""
-    hit.Parent = track
-    hit.MouseButton1Down:Connect(function() sliding = true end)
-    UserInputService.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
-    end)
-    UserInputService.InputChanged:Connect(function(i)
-        if sliding and i.UserInputType == Enum.UserInputType.MouseMovement then
-            local r = math.clamp((i.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-            set(minv + r * (maxv - minv))
-        end
-    end)
-end
-
-local function Dropdown(parent, text, y, key, opts, def, cb)
-    local BASE, ITEM = 32, 24
-    local wrap = Instance.new("Frame")
-    wrap.Size = UDim2.new(1,0,0,BASE)
-    wrap.Position = UDim2.new(0,0,0,y)
-    wrap.BackgroundTransparency = 1
-    wrap.ZIndex = 50
-    wrap.Parent = parent
-
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1,0,0,BASE)
-    row.BackgroundColor3 = COL.light
-    row.BorderColor3 = COL.edge
-    row.BorderSizePixel = 1
-    row.ZIndex = 50
-    row.Parent = wrap
-
-    local lab = Instance.new("TextLabel")
-    lab.Size = UDim2.new(0.45,0,1,0)
-    lab.Position = UDim2.new(0,10,0,0)
-    lab.BackgroundTransparency = 1
-    lab.Text = text
-    lab.TextColor3 = COL.text
-    lab.Font = Enum.Font.Gotham
-    lab.TextSize = 12
-    lab.TextXAlignment = Enum.TextXAlignment.Left
-    lab.ZIndex = 51
-    lab.Parent = row
-
-    local sel = Instance.new("TextLabel")
-    sel.Size = UDim2.new(0.5,-20,1,0)
-    sel.Position = UDim2.new(0.45,0,0,0)
-    sel.BackgroundTransparency = 1
-    sel.Text = def
-    sel.TextColor3 = COL.accent
-    sel.Font = Enum.Font.GothamBold
-    sel.TextSize = 11
-    sel.TextXAlignment = Enum.TextXAlignment.Right
-    sel.ZIndex = 51
-    sel.Parent = row
-
-    local list = Instance.new("Frame")
-    list.Size = UDim2.new(1,0,0,#opts * ITEM)
-    list.Position = UDim2.new(0,0,0,BASE)
-    list.BackgroundColor3 = COL.mid
-    list.BorderColor3 = COL.accent
-    list.BorderSizePixel = 1
-    list.Visible = false
-    list.ZIndex = 100
-    list.Parent = wrap
-
-    for i, opt in ipairs(opts) do
-        local it = Instance.new("TextButton")
-        it.Size = UDim2.new(1,0,0,ITEM)
-        it.Position = UDim2.new(0,0,0,(i-1)*ITEM)
-        it.BackgroundColor3 = COL.mid
-        it.BorderSizePixel = 0
-        it.Text = opt
-        it.TextColor3 = (opt == def) and COL.accent or COL.dim
-        it.Font = Enum.Font.Gotham
-        it.TextSize = 11
-        it.ZIndex = 101
-        it.Parent = list
-        it.MouseButton1Click:Connect(function()
-            sel.Text = opt CFG[key] = opt
-            list.Visible = false
-            wrap.Size = UDim2.new(1,0,0,BASE)
-            if cb then cb(opt) end
         end)
     end
 
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1,0,1,0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.ZIndex = 52
-    btn.Parent = row
-    btn.MouseButton1Click:Connect(function()
-        list.Visible = not list.Visible
-        wrap.Size = list.Visible and UDim2.new(1,0,0,BASE + #opts * ITEM) or UDim2.new(1,0,0,BASE)
-    end)
+    espBillboards[plr] = bb
 end
 
--- TAB CONTENT
-local y
-
--- COMBAT
-y = 8
-Header(Panels[1], "AIMBOT", y) y = y + 24
-Toggle(Panels[1], "Enable Aimbot", y, "AimbotEnabled") y = y + 30
-Toggle(Panels[1], "Team Check", y, "AimbotTeamCheck") y = y + 30
-Toggle(Panels[1], "Visibility Check", y, "AimbotVisCheck") y = y + 30
-Toggle(Panels[1], "Prediction", y, "AimbotPrediction") y = y + 32
-Slider(Panels[1], "FOV", y, "AimbotFOV", 20, 500, 200) y = y + 48
-Slider(Panels[1], "Smoothing x100", y, "AimbotSmoothing", 5, 60, 15, function(v) CFG.AimbotSmoothing = v/100 end) y = y + 48
-Slider(Panels[1], "Bullet Speed", y, "AimbotBulletSpeed", 300, 1600, 920) y = y + 48
-Slider(Panels[1], "Predict Mult x100", y, "AimbotPredictMult", 70, 140, 108, function(v) CFG.AimbotPredictMult = v/100 end) y = y + 48
-Dropdown(Panels[1], "Aim Part", y, "AimbotPart", {"Head","HumanoidRootPart","UpperTorso"}, "Head") y = y + 40
-
-Header(Panels[1], "SILENT AIM", y) y = y + 24
-Toggle(Panels[1], "Enable Silent Aim", y, "SilentAimEnabled", function(v) if v then EnableSilent() else DisableSilent() end end) y = y + 30
-Toggle(Panels[1], "Sticky Lock", y, "SilentAimSticky") y = y + 30
-Toggle(Panels[1], "Team Check", y, "SilentAimTeamCheck") y = y + 30
-Toggle(Panels[1], "Visibility Check", y, "SilentAimVisCheck") y = y + 30
-Toggle(Panels[1], "Prediction", y, "SilentAimPrediction") y = y + 32
-Dropdown(Panels[1], "Method", y, "SilentAimMethod", {"Mouse","Ray","Both"}, "Both") y = y + 40
-Slider(Panels[1], "Silent FOV", y, "SilentAimFOV", 20, 500, 250) y = y + 48
-Slider(Panels[1], "Hit Chance %", y, "SilentAimHitChance", 10, 100, 100) y = y + 48
-Slider(Panels[1], "Bullet Speed", y, "SilentAimBulletSpeed", 300, 1600, 920) y = y + 48
-Slider(Panels[1], "Predict Mult x100", y, "SilentAimPredictMult", 70, 140, 108, function(v) CFG.SilentAimPredictMult = v/100 end) y = y + 48
-Dropdown(Panels[1], "Aim Part", y, "SilentAimPart", {"Head","HumanoidRootPart","UpperTorso"}, "Head") y = y + 40
-
-Header(Panels[1], "TRIGGERBOT", y) y = y + 24
-Toggle(Panels[1], "Enable Triggerbot", y, "TriggerBot") y = y + 30
-
--- VISUALS
-y = 8
-Header(Panels[2], "ESP", y) y = y + 24
-Toggle(Panels[2], "ESP Enabled", y, "ESPEnabled") y = y + 30
-Toggle(Panels[2], "Boxes", y, "ESPBoxes") y = y + 30
-Toggle(Panels[2], "Names", y, "ESPNames") y = y + 30
-Toggle(Panels[2], "Health Bars", y, "ESPHealth") y = y + 30
-Toggle(Panels[2], "Distance", y, "ESPDistance") y = y + 30
-Toggle(Panels[2], "Tracers", y, "ESPTracers") y = y + 30
-Toggle(Panels[2], "Team Colors", y, "ESPTeamColor") y = y + 30
-Toggle(Panels[2], "Show Teammates", y, "ESPShowTeam") y = y + 32
-Slider(Panels[2], "Max Distance", y, "ESPMaxDist", 100, 2500, 1100) y = y + 48
-Slider(Panels[2], "Name Size", y, "ESPNameSize", 10, 20, 13) y = y + 48
-Slider(Panels[2], "Box Thickness x10", y, "ESPBoxThickness", 8, 30, 15, function(v) CFG.ESPBoxThickness = v/10 end) y = y + 52
-
-Header(Panels[2], "FOV CIRCLE", y) y = y + 24
-Toggle(Panels[2], "Show FOV Circle", y, "FOVCircleEnabled") y = y + 30
-Toggle(Panels[2], "Filled", y, "FOVCircleFill") y = y + 30
-Slider(Panels[2], "Thickness x10", y, "FOVCircleThickness", 8, 30, 16, function(v) CFG.FOVCircleThickness = v/10 end)
-
--- MOVEMENT
-y = 8
-Header(Panels[3], "MOVEMENT", y) y = y + 24
-Toggle(Panels[3], "Safe Speed", y, "SpeedEnabled", function(v) if v then StartSpeed() else StopSpeed() end end) y = y + 30
-Slider(Panels[3], "Speed Mult x100", y, "SpeedMult", 115, 160, 135, function(v) CFG.SpeedMult = v/100 end) y = y + 52
-Toggle(Panels[3], "Noclip", y, "NoclipEnabled", function(v) if v then EnableNoclip() else DisableNoclip() end end)
-
--- MISC
-y = 8
-Header(Panels[4], "EXPLOITS", y) y = y + 24
-Toggle(Panels[4], "Infinite Ammo", y, "InfAmmoEnabled", function(v) if v then HookAmmo() end end) y = y + 30
-Toggle(Panels[4], "God Mode", y, "GodModeEnabled", function(v) if v then EnableGod() else DisableGod() end end) y = y + 30
-Toggle(Panels[4], "No Dig Cooldown", y, "NoDigCooldown", function(v) if v then PatchDig() end end) y = y + 32
-Header(Panels[4], "WORLD", y) y = y + 24
-Toggle(Panels[4], "Fullbright", y, "FullbrightEnabled", function(v) SetFullbright(v) end)
-
--- SETTINGS
-y = 8
-Header(Panels[5], "INTERFACE", y) y = y + 24
-Dropdown(Panels[5], "Theme", y, "UITheme", {"Iron","Night","Blood","Olive"}, "Iron", function(v)
-    Notify("Theme → "..v.." (reload for full recolor)")
-end) y = y + 40
-Slider(Panels[5], "UI Scale x100", y, "UIScale", 80, 130, 100, function(v) CFG.UIScale = v/100 end) y = y + 48
-Slider(Panels[5], "Opacity x100", y, "UIOpacity", 55, 100, 94, function(v)
-    CFG.UIOpacity = v/100
-    Main.BackgroundTransparency = 1 - CFG.UIOpacity
-end) y = y + 52
-Toggle(Panels[5], "Watermark", y, "ShowWatermark") y = y + 30
-Toggle(Panels[5], "Keybind List", y, "ShowKeybinds") y = y + 30
-Toggle(Panels[5], "Notifications", y, "ShowNotifs")
-
-Switch(1)
-
--- Right Ctrl hide + minimize
-local uiVisible = true
-local function ToggleUI()
-    uiVisible = not uiVisible
-    Main.Visible = uiVisible
-    Notify(uiVisible and "UI Shown" or "UI Hidden")
-end
-
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.RightControl then
-        ToggleUI()
+local function refreshAllESP()
+    for plr, bb in pairs(espBillboards) do
+        bb:Destroy()
+        espBillboards[plr] = nil
     end
+    if not State.ESP then return end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        buildESP(plr)
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if not State.ESP then return end
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        buildESP(plr)
+    end)
 end)
 
-local Min = Instance.new("TextButton")
-Min.Size = UDim2.new(0,22,0,22)
-Min.AnchorPoint = Vector2.new(1,0.5)
-Min.Position = UDim2.new(1,-8,0.5,0)
-Min.BackgroundColor3 = COL.mid
-Min.BorderColor3 = COL.edge
-Min.BorderSizePixel = 1
-Min.Text = "—"
-Min.TextColor3 = COL.dim
-Min.Font = Enum.Font.GothamBold
-Min.TextSize = 12
-Min.Parent = TitleBar
+Players.PlayerRemoving:Connect(removeESP)
 
-Min.MouseButton1Click:Connect(function()
-    local mini = not TabScroll.Visible
-    TabScroll.Visible = not mini
-    Content.Visible = not mini
-    Min.Text = mini and "+" or "—"
-    Main.Size = mini and UDim2.new(0,500*CFG.UIScale,0,40) or UDim2.new(0,500*CFG.UIScale,0,640*CFG.UIScale)
+-- ─── FEATURE: SPEED BOOST ───────────────────────────────────────────────────
+
+local function applySpeed()
+    if not humanoid then return end
+    humanoid.WalkSpeed = State.SpeedBoost and (16 * State.SpeedMult) or 16
+end
+
+lp.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    refreshChar()
+    applySpeed()
 end)
 
-EnableSilent()
-print("[Field Ops v2.7] Tabs forced white • ESP solid • RightCtrl hide • Trigger under Combat")
+-- ─── UI BINDINGS ────────────────────────────────────────────────────────────
+
+CombatBox:AddToggle("InfRegen", {
+    Text    = "Infinite Regen",
+    Default = false,
+    Tooltip = "Constantly restores HP client-side during damage windows",
+    Callback = function(v)
+        State.InfRegen = v
+    end,
+})
+
+CombatBox:AddSlider("RegenRate", {
+    Text    = "Regen Per Tick",
+    Default = 25,
+    Min     = 5,
+    Max     = 100,
+    Rounding = 0,
+    Callback = function(v)
+        State.RegenRate = v
+    end,
+})
+
+CombatBox:AddToggle("AutoParry", {
+    Text    = "Auto-Parry",
+    Default = false,
+    Tooltip = "Fires parry Remote on incoming hit detection",
+    Callback = function(v)
+        State.AutoParry = v
+    end,
+})
+
+CombatBox:AddToggle("KillAura", {
+    Text    = "Kill Aura",
+    Default = false,
+    Tooltip = "Auto-attacks nearest enemy within range",
+    Callback = function(v)
+        State.KillAura = v
+    end,
+})
+
+CombatBox:AddSlider("AuraRange", {
+    Text    = "Aura Range (studs)",
+    Default = 15,
+    Min     = 5,
+    Max     = 40,
+    Rounding = 0,
+    Callback = function(v)
+        State.AuraRange = v
+    end,
+})
+
+CombatBox:AddSlider("AuraDelay", {
+    Text    = "Aura Fire Delay (s)",
+    Default = 12,
+    Min     = 5,
+    Max     = 50,
+    Rounding = 0,
+    Callback = function(v)
+        State.AuraDelay = v / 100
+    end,
+})
+
+VisualBox:AddToggle("ESP", {
+    Text    = "Player ESP",
+    Default = false,
+    Tooltip = "Billboard name + HP above all enemies",
+    Callback = function(v)
+        State.ESP = v
+        refreshAllESP()
+    end,
+})
+
+MoveBox:AddToggle("SpeedBoost", {
+    Text    = "Speed Boost",
+    Default = false,
+    Callback = function(v)
+        State.SpeedBoost = v
+        applySpeed()
+    end,
+})
+
+MoveBox:AddSlider("SpeedMult", {
+    Text    = "Speed Multiplier",
+    Default = 160,
+    Min     = 110,
+    Max     = 300,
+    Rounding = 0,
+    Callback = function(v)
+        State.SpeedMult = v / 100
+        if State.SpeedBoost then applySpeed() end
+    end,
+})
+
+-- ─── THEME + SAVE ───────────────────────────────────────────────────────────
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:SetFolder("AxiomScripts/CombatWarriors")
+SaveManager:BuildConfigSection(Tabs.Config)
+ThemeManager:BuildThemeSection(Tabs.Config)
+SaveManager:LoadAutoloadConfig()
+
+Library:OnUnload(function()
+    if regenConn  then regenConn:Disconnect() end
+    if auraConn   then auraConn:Disconnect() end
+    if parryConn  then parryConn:Disconnect() end
+    refreshAllESP()
+    if humanoid then humanoid.WalkSpeed = 16 end
+end)
