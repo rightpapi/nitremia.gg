@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lithium UI — Component Library</title>
+  <style>
+    /* ============================================================
+       LITHIUM UI — DESIGN TOKENS
+       Creator: rightpapi
+    ============================================================ */
+    :root {
+      --li-bg:            #000000;
+      --li-surface:       #0a0a0a;
+      --li-surface-raise: #111111;
+      --li-border:        #ffffff;
+      --li-border-dim:    rgba(255,255,255,0.18);
+      --li-border-ghost:  rgba(255,255,255,0.07);
+      --li-text:          #ffffff;
+      --li-text-muted:    rgba(255,255,255,0.45);
+      --li-text-dim:      rgba(255,255,255,0.22);
+      --li-accent:        #ffffff;
+      --li-danger:        #ff4444;
+      --li-success:       #44ff88;
+      --li-warn:          #ffcc00;
+
+      --li-radius:        4px;
+      --li-radius-lg:     6px;
+      --li-gap:           12px;
+      --li-gap-lg:        20px;
+
+      --li-font:          'Share Tech Mono', 'Courier New', monospace;
+      --li-font-ui:       'Inter', 'Segoe UI', system-ui, sans-serif;
+
+      --li-transition:    160ms cubic-bezier(0.4, 0, 0.2, 1);
+      --li-glow:          0 0 12px rgba(255,255,255,0.12), 0 0 2px rgba(255,255,255,0.08);
+      --li-glow-strong:   0 0 20px rgba(255,255,255,0.22), 0 0 4px rgba(255,255,255,0.14);
+    }
+
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--li-bg);
+      color: var(--li-text);
+      font-family: var(--li-font-ui);
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================================
+       SCROLLBAR
+    ============================================================ */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--li-border-dim); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--li-border); }
+
+    /* ============================================================
+       WINDOW — the draggable script container
+    ============================================================ */
+    .li-window {
+      position: fixed;
+      background: var(--li-surface);
+      border: 1px solid var(--li-border);
+      border-radius: var(--li-radius-lg);
+      box-shadow: var(--li-glow), 0 24px 64px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 280px;
+      user-select: none;
+    }
+
+    /* ============================================================
+       TITLEBAR
+    ============================================================ */
+    .li-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      height: 38px;
+      background: var(--li-surface-raise);
+      border-bottom: 1px solid var(--li-border-dim);
+      cursor: grab;
+      flex-shrink: 0;
+    }
+    .li-titlebar:active { cursor: grabbing; }
+
+    .li-title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .li-logo-mark {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--li-border);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--li-font);
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      color: var(--li-text);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .li-title-text {
+      font-family: var(--li-font);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: var(--li-text);
+      text-transform: uppercase;
+    }
+
+    .li-title-tag {
+      font-family: var(--li-font);
+      font-size: 9px;
+      color: var(--li-text-muted);
+      letter-spacing: 0.5px;
+      margin-left: 2px;
+    }
+
+    .li-window-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .li-control-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--li-border-dim);
+      border-radius: 3px;
+      background: transparent;
+      color: var(--li-text-muted);
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color var(--li-transition), color var(--li-transition), background var(--li-transition);
+      line-height: 1;
+    }
+    .li-control-btn:hover {
+      border-color: var(--li-border);
+      color: var(--li-text);
+      background: var(--li-border-ghost);
+    }
+    .li-control-btn.li-close:hover {
+      border-color: var(--li-danger);
+      color: var(--li-danger);
+    }
+
+    /* ============================================================
+       CONTENT AREA
+    ============================================================ */
+    .li-body {
+      padding: var(--li-gap) var(--li-gap-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--li-gap);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* ============================================================
+       SECTION LABEL
+    ============================================================ */
+    .li-section-label {
+      font-family: var(--li-font);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--li-text-dim);
+      text-transform: uppercase;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--li-border-ghost);
+      margin-bottom: 2px;
+    }
+
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+    .li-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 32px;
+      padding: 0 16px;
+      border-radius: var(--li-radius);
+      font-family: var(--li-font);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all var(--li-transition);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    /* Primary */
+    .li-btn-primary {
+      background: var(--li-text);
+      color: var(--li-bg);
+      border-color: var(--li-text);
+    }
+    .li-btn-primary:hover {
+      background: transparent;
+      color: var(--li-text);
+      box-shadow: var(--li-glow-strong);
+    }
+
+    /* Outline */
+    .li-btn-outline {
+      background: transparent;
+      color: var(--li-text);
+      border-color: var(--li-border-dim);
+    }
+    .li-btn-outline:hover {
+      border-color: var(--li-border);
+      background: var(--li-border-ghost);
+      box-shadow: var(--li-glow);
+    }
+
+    /* Ghost */
+    .li-btn-ghost {
+      background: transparent;
+      color: var(--li-text-muted);
+      border-color: transparent;
+    }
+    .li-btn-ghost:hover {
+      color: var(--li-text);
+      background: var(--li-border-ghost);
+    }
+
+    /* Danger */
+    .li-btn-danger {
+      background: transparent;
+      color: var(--li-danger);
+      border-color: var(--li-danger);
+    }
+    .li-btn-danger:hover {
+      background: rgba(255,68,68,0.08);
+      box-shadow: 0 0 12px rgba(255,68,68,0.15);
+    }
+
+    /* Full width */
+    .li-btn-full { width: 100%; }
+
+    /* Small */
+    .li-btn-sm {
+      height: 26px;
+      padding: 0 10px;
+      font-size: 9px;
+    }
+
+    /* Active / pressed state */
+    .li-btn:active { transform: scale(0.97); }
+    .li-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       TOGGLE (ON/OFF SWITCH)
+    ============================================================ */
+    .li-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .li-toggle-label {
+      font-size: 12px;
+      color: var(--li-text);
+      flex: 1;
+    }
+    .li-toggle-label small {
+      display: block;
+      font-size: 10px;
+      color: var(--li-text-muted);
+      margin-top: 1px;
+    }
+
+    .li-toggle {
+      position: relative;
+      width: 38px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .li-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .li-toggle-track {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--li-border-dim);
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      transition: border-color var(--li-transition), box-shadow var(--li-transition);
+    }
+    .li-toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 12px;
+      height: 12px;
+      background: var(--li-text-muted);
+      border-radius: 50%;
+      transition: transform var(--li-transition), background var(--li-transition);
+    }
+    .li-toggle input:checked ~ .li-toggle-track {
+      border-color: var(--li-border);
+      box-shadow: var(--li-glow);
+    }
+    .li-toggle input:checked ~ .li-toggle-track .li-toggle-thumb {
+      transform: translateX(18px);
+      background: var(--li-text);
+    }
+
+    /* ============================================================
+       SLIDER
+    ============================================================ */
+    .li-slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .li-slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .li-slider-name {
+      font-size: 12px;
+      color: var(--li-text);
+    }
+    .li-slider-value {
+      font-family: var(--li-font);
+      font-size: 10px;
+      color: var(--li-text-muted);
+    }
+
+    .li-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 2px;
+      background: var(--li-border-dim);
+      border-radius: 1px;
+      outline: none;
+      cursor: pointer;
+    }
+    .li-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--li-text);
+      border: 2px solid var(--li-bg);
+      box-shadow: 0 0 0 1px var(--li-border);
+      cursor: pointer;
+      transition: box-shadow var(--li-transition);
+    }
+    .li-slider::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 1px var(--li-border), var(--li-glow-strong);
+    }
+    .li-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--li-text);
+      border: 2px solid var(--li-bg);
+      box-shadow: 0 0 0 1px var(--li-border);
+      cursor: pointer;
+    }
+
+    /* ============================================================
+       DROPDOWN SELECT
+    ============================================================ */
+    .li-select-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .li-select-label {
+      font-size: 11px;
+      color: var(--li-text-muted);
+      letter-spacing: 0.3px;
+    }
+    .li-select {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 100%;
+      height: 32px;
+      padding: 0 32px 0 12px;
+      background: var(--li-surface-raise);
+      border: 1px solid var(--li-border-dim);
+      border-radius: var(--li-radius);
+      color: var(--li-text);
+      font-family: var(--li-font-ui);
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--li-transition), box-shadow var(--li-transition);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 11px center;
+    }
+    .li-select:focus {
+      border-color: var(--li-border);
+      box-shadow: var(--li-glow);
+    }
+    .li-select option {
+      background: #111;
+      color: var(--li-text);
+    }
+
+    /* ============================================================
+       INPUT / TEXT FIELD
+    ============================================================ */
+    .li-input-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .li-input-label {
+      font-size: 11px;
+      color: var(--li-text-muted);
+      letter-spacing: 0.3px;
+    }
+    .li-input {
+      width: 100%;
+      height: 32px;
+      padding: 0 12px;
+      background: var(--li-surface-raise);
+      border: 1px solid var(--li-border-dim);
+      border-radius: var(--li-radius);
+      color: var(--li-text);
+      font-family: var(--li-font-ui);
+      font-size: 12px;
+      outline: none;
+      transition: border-color var(--li-transition), box-shadow var(--li-transition);
+    }
+    .li-input::placeholder { color: var(--li-text-dim); }
+    .li-input:focus {
+      border-color: var(--li-border);
+      box-shadow: var(--li-glow);
+    }
+
+    /* ============================================================
+       KEYBIND DISPLAY
+    ============================================================ */
+    .li-keybind-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .li-keybind-name {
+      font-size: 12px;
+      color: var(--li-text);
+    }
+    .li-keybind-keys {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .li-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 22px;
+      padding: 0 6px;
+      border: 1px solid var(--li-border-dim);
+      border-radius: 3px;
+      font-family: var(--li-font);
+      font-size: 9px;
+      color: var(--li-text-muted);
+      background: var(--li-surface-raise);
+      letter-spacing: 0.3px;
+    }
+    .li-key-sep {
+      font-size: 9px;
+      color: var(--li-text-dim);
+    }
+
+    /* ============================================================
+       STATUS / BADGE
+    ============================================================ */
+    .li-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .li-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .li-status-dot.active  { background: var(--li-success); box-shadow: 0 0 6px var(--li-success); }
+    .li-status-dot.idle    { background: var(--li-text-dim); }
+    .li-status-dot.warn    { background: var(--li-warn); box-shadow: 0 0 6px var(--li-warn); }
+    .li-status-dot.error   { background: var(--li-danger); box-shadow: 0 0 6px var(--li-danger); }
+
+    .li-status-text {
+      font-size: 11px;
+      color: var(--li-text-muted);
+    }
+    .li-status-text strong {
+      color: var(--li-text);
+      font-weight: 600;
+    }
+
+    /* ============================================================
+       STAT PILL — numerical readout
+    ============================================================ */
+    .li-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+    .li-stat {
+      background: var(--li-surface-raise);
+      border: 1px solid var(--li-border-ghost);
+      border-radius: var(--li-radius);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .li-stat-value {
+      font-family: var(--li-font);
+      font-size: 16px;
+      color: var(--li-text);
+      line-height: 1.1;
+    }
+    .li-stat-label {
+      font-size: 9px;
+      color: var(--li-text-dim);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    /* ============================================================
+       DIVIDER
+    ============================================================ */
+    .li-divider {
+      height: 1px;
+      background: var(--li-border-ghost);
+      margin: 2px 0;
+    }
+
+    /* ============================================================
+       NOTIFICATION / TOAST — "Lithium dose administered."
+    ============================================================ */
+    .li-toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 99999;
+      pointer-events: none;
+    }
+    .li-toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: var(--li-surface);
+      border: 1px solid var(--li-border);
+      border-radius: var(--li-radius);
+      box-shadow: var(--li-glow-strong), 0 8px 24px rgba(0,0,0,0.7);
+      font-family: var(--li-font);
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      color: var(--li-text);
+      pointer-events: auto;
+      animation: li-toast-in 280ms cubic-bezier(0.2, 0, 0, 1) both;
+    }
+    .li-toast.li-toast-out {
+      animation: li-toast-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
+    }
+    .li-toast-icon {
+      font-size: 13px;
+      line-height: 1;
+    }
+    .li-toast.danger  { border-color: var(--li-danger); color: var(--li-danger); }
+    .li-toast.warn    { border-color: var(--li-warn);   color: var(--li-warn);   }
+    .li-toast.success { border-color: var(--li-success); color: var(--li-success); }
+
+    @keyframes li-toast-in {
+      from { opacity: 0; transform: translateY(10px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+    @keyframes li-toast-out {
+      from { opacity: 1; transform: translateY(0)   scale(1);    }
+      to   { opacity: 0; transform: translateY(6px) scale(0.96); }
+    }
+
+    /* ============================================================
+       TAB BAR
+    ============================================================ */
+    .li-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--li-border-ghost);
+      gap: 2px;
+    }
+    .li-tab {
+      padding: 6px 14px;
+      font-family: var(--li-font);
+      font-size: 9px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--li-text-muted);
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      margin-bottom: -1px;
+      transition: color var(--li-transition), border-color var(--li-transition);
+      user-select: none;
+    }
+    .li-tab:hover { color: var(--li-text); }
+    .li-tab.active {
+      color: var(--li-text);
+      border-bottom-color: var(--li-border);
+    }
+    .li-tab-panel { display: none; padding-top: 12px; }
+    .li-tab-panel.active { display: flex; flex-direction: column; gap: var(--li-gap); }
+
+    /* ============================================================
+       PROGRESS BAR
+    ============================================================ */
+    .li-progress-wrap { display: flex; flex-direction: column; gap: 5px; }
+    .li-progress-header { display: flex; justify-content: space-between; }
+    .li-progress-name { font-size: 11px; color: var(--li-text-muted); }
+    .li-progress-pct  { font-family: var(--li-font); font-size: 10px; color: var(--li-text-dim); }
+    .li-progress-track {
+      width: 100%;
+      height: 2px;
+      background: var(--li-border-ghost);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+    .li-progress-fill {
+      height: 100%;
+      background: var(--li-text);
+      border-radius: 1px;
+      transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--li-glow);
+    }
+
+    /* ============================================================
+       DRAG-TO-MOVE LOGIC (JS)
+    ============================================================ */
+
+    /* ============================================================
+       DEMO PAGE LAYOUT
+    ============================================================ */
+    .demo-page {
+      min-height: 100vh;
+      background: #050505;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 60px 24px 80px;
+      gap: 48px;
+    }
+    .demo-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .demo-wordmark {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 6px;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+    }
+    .demo-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 36px;
+      letter-spacing: -1px;
+      color: #fff;
+      line-height: 1;
+    }
+    .demo-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.3px;
+    }
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      width: 100%;
+      max-width: 1080px;
+    }
+    .demo-card {
+      background: #0a0a0a;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .demo-card-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .demo-button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .demo-live-window {
+      position: relative;
+      height: 300px;
+    }
+    .demo-live-window .li-window {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+    }
+    /* ============================================================
+       EXTENSION DEMO LAYOUT
+    ============================================================ */
+    .demo-ext-row {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 700px) {
+      .demo-ext-row { grid-template-columns: 1fr; }
+    }
+    .demo-ext-window {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--li-radius-lg);
+      overflow: hidden;
+      min-height: 200px;
+    }
+    .demo-ext-docs {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .demo-ext-block {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .demo-ext-block-label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      font-family: var(--li-font);
+    }
+    .demo-code {
+      background: #0d0d0d;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 4px;
+      padding: 10px 14px;
+      font-family: var(--li-font);
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600&display=swap');
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOAST CONTAINER (global, injected by LithiumUI.toast())
+============================================================ -->
+<div class="li-toast-container" id="li-toast-container"></div>
+
+<!-- ============================================================
+     DEMO PAGE
+============================================================ -->
+<div class="demo-page">
+
+  <div class="demo-header">
+    <div class="demo-wordmark">rightpapi</div>
+    <div class="demo-title">LITHIUM UI</div>
+    <div class="demo-sub">Component library · Black &amp; white · Script-ready</div>
+  </div>
+
+  <div class="demo-grid">
+
+    <!-- LIVE WINDOW PREVIEW -->
+    <div class="demo-card" style="grid-column: 1 / -1;">
+      <div class="demo-card-title">Live Window — Draggable</div>
+      <div style="position: relative; height: 340px; overflow: hidden; border-radius: 4px;">
+
+        <div class="li-window" id="demo-window" style="top:0;left:0;width:300px;">
+          <div class="li-titlebar" id="demo-titlebar">
+            <div class="li-title-left">
+              <div class="li-logo-mark">Li</div>
+              <span class="li-title-text">Lithium</span>
+              <span class="li-title-tag">Aimbot</span>
+            </div>
+            <div class="li-window-controls">
+              <button class="li-control-btn" title="Minimise">&#x2212;</button>
+              <button class="li-control-btn li-close" title="Close">&#x2715;</button>
+            </div>
+          </div>
+
+          <div class="li-body">
+            <!-- Status -->
+            <div class="li-status-row">
+              <div class="li-status-dot active"></div>
+              <div class="li-status-text"><strong>Active</strong> &mdash; injected &amp; running</div>
+            </div>
+
+            <div class="li-divider"></div>
+
+            <!-- Tabs -->
+            <div>
+              <div class="li-tabs">
+                <div class="li-tab active" data-tab="main">Main</div>
+                <div class="li-tab" data-tab="config">Config</div>
+                <div class="li-tab" data-tab="keys">Keys</div>
+              </div>
+              <div class="li-tab-panel active" id="tab-main">
+                <!-- Toggles -->
+                <div class="li-section-label">Features</div>
+                <label class="li-toggle-row">
+                  <div class="li-toggle-label">
+                    Silent Aim
+                    <small>Redirects projectiles server-side</small>
+                  </div>
+                  <div class="li-toggle">
+                    <input type="checkbox" checked />
+                    <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
+                  </div>
+                </label>
+                <label class="li-toggle-row">
+                  <div class="li-toggle-label">
+                    Prediction
+                    <small>Leads moving targets</small>
+                  </div>
+                  <div class="li-toggle">
+                    <input type="checkbox" />
+                    <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
+                  </div>
+                </label>
+
+                <div class="li-divider"></div>
+
+                <!-- Slider -->
+                <div class="li-slider-row">
+                  <div class="li-slider-header">
+                    <span class="li-slider-name">FOV Radius</span>
+                    <span class="li-slider-value" id="fov-val">80</span>
+                  </div>
+                  <input class="li-slider" type="range" min="10" max="200" value="80"
+                    oninput="document.getElementById('fov-val').textContent = this.value" />
+                </div>
+
+                <!-- Stats -->
+                <div class="li-section-label">Session</div>
+                <div class="li-stat-grid">
+                  <div class="li-stat">
+                    <div class="li-stat-value">247</div>
+                    <div class="li-stat-label">Locks</div>
+                  </div>
+                  <div class="li-stat">
+                    <div class="li-stat-value">91%</div>
+                    <div class="li-stat-label">Hit Rate</div>
+                  </div>
+                  <div class="li-stat">
+                    <div class="li-stat-value">4ms</div>
+                    <div class="li-stat-label">Latency</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="li-tab-panel" id="tab-config">
+                <div class="li-select-wrap">
+                  <span class="li-select-label">Target Priority</span>
+                  <select class="li-select">
+                    <option>Nearest to crosshair</option>
+                    <option>Lowest health</option>
+                    <option>Highest threat</option>
+                  </select>
+                </div>
+                <div class="li-input-wrap">
+                  <span class="li-input-label">Smoothness</span>
+                  <input class="li-input" type="text" placeholder="e.g. 0.35" value="0.35" />
+                </div>
+                <div class="li-slider-row">
+                  <div class="li-slider-header">
+                    <span class="li-slider-name">Max Angle</span>
+                    <span class="li-slider-value" id="angle-val">15°</span>
+                  </div>
+                  <input class="li-slider" type="range" min="1" max="90" value="15"
+                    oninput="document.getElementById('angle-val').textContent = this.value + '°'" />
+                </div>
+              </div>
+
+              <div class="li-tab-panel" id="tab-keys">
+                <div class="li-section-label">Keybinds</div>
+                <div class="li-keybind-row">
+                  <span class="li-keybind-name">Toggle Script</span>
+                  <div class="li-keybind-keys">
+                    <span class="li-key">INSERT</span>
+                  </div>
+                </div>
+                <div class="li-keybind-row">
+                  <span class="li-keybind-name">Silent Aim</span>
+                  <div class="li-keybind-keys">
+                    <span class="li-key">RMB</span>
+                  </div>
+                </div>
+                <div class="li-keybind-row">
+                  <span class="li-keybind-name">Panic Exit</span>
+                  <div class="li-keybind-keys">
+                    <span class="li-key">END</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="li-divider"></div>
+
+            <div class="li-progress-wrap">
+              <div class="li-progress-header">
+                <span class="li-progress-name">Memory integrity</span>
+                <span class="li-progress-pct">94%</span>
+              </div>
+              <div class="li-progress-track">
+                <div class="li-progress-fill" style="width: 94%;"></div>
+              </div>
+            </div>
+
+            <button class="li-btn li-btn-danger li-btn-full li-btn-sm"
+              onclick="LithiumUI.toast('Script detached.', 'danger')">
+              Detach Script
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="demo-card">
+      <div class="demo-card-title">Buttons</div>
+      <div class="demo-button-row">
+        <button class="li-btn li-btn-primary" onclick="LithiumUI.toast('Lithium dose administered.', 'default')">Primary</button>
+        <button class="li-btn li-btn-outline">Outline</button>
+        <button class="li-btn li-btn-ghost">Ghost</button>
+        <button class="li-btn li-btn-danger">Danger</button>
+      </div>
+      <div class="demo-button-row">
+        <button class="li-btn li-btn-primary li-btn-sm">Small</button>
+        <button class="li-btn li-btn-outline li-btn-sm">Small</button>
+        <button class="li-btn li-btn-primary" disabled>Disabled</button>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="demo-card">
+      <div class="demo-card-title">Controls</div>
+      <label class="li-toggle-row">
+        <div class="li-toggle-label">Feature toggle<small>With subtitle</small></div>
+        <div class="li-toggle"><input type="checkbox" checked />
+          <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
+        </div>
+      </label>
+      <div class="li-slider-row">
+        <div class="li-slider-header">
+          <span class="li-slider-name">Speed</span>
+          <span class="li-slider-value" id="spd">50</span>
+        </div>
+        <input class="li-slider" type="range" min="0" max="100" value="50"
+          oninput="document.getElementById('spd').textContent=this.value" />
+      </div>
+      <div class="li-select-wrap">
+        <span class="li-select-label">Mode</span>
+        <select class="li-select">
+          <option>Auto</option><option>Manual</option><option>Burst</option>
+        </select>
+      </div>
+      <div class="li-input-wrap">
+        <span class="li-input-label">Value</span>
+        <input class="li-input" type="text" placeholder="Enter value…" />
+      </div>
+    </div>
+
+    <!-- STATUS & STATS -->
+    <div class="demo-card">
+      <div class="demo-card-title">Status &amp; Stats</div>
+      <div class="li-status-row"><div class="li-status-dot active"></div><div class="li-status-text"><strong>Active</strong> — running</div></div>
+      <div class="li-status-row"><div class="li-status-dot idle"></div><div class="li-status-text">Idle</div></div>
+      <div class="li-status-row"><div class="li-status-dot warn"></div><div class="li-status-text"><strong>Warning</strong> — detection risk</div></div>
+      <div class="li-status-row"><div class="li-status-dot error"></div><div class="li-status-text"><strong>Error</strong> — injection failed</div></div>
+      <div class="li-divider"></div>
+      <div class="li-stat-grid">
+        <div class="li-stat"><div class="li-stat-value">128</div><div class="li-stat-label">Calls</div></div>
+        <div class="li-stat"><div class="li-stat-value">3ms</div><div class="li-stat-label">Ping</div></div>
+        <div class="li-stat"><div class="li-stat-value">99%</div><div class="li-stat-label">Uptime</div></div>
+      </div>
+    </div>
+
+    <!-- TOASTS -->
+    <div class="demo-card">
+      <div class="demo-card-title">Notifications</div>
+      <div class="demo-button-row">
+        <button class="li-btn li-btn-outline li-btn-sm"
+          onclick="LithiumUI.toast('Lithium dose administered.')">
+          ⬜ Default
+        </button>
+        <button class="li-btn li-btn-outline li-btn-sm"
+          onclick="LithiumUI.toast('Injection successful.', 'success')">
+          ✅ Success
+        </button>
+        <button class="li-btn li-btn-outline li-btn-sm"
+          onclick="LithiumUI.toast('Detection risk elevated.', 'warn')">
+          ⚠️ Warn
+        </button>
+        <button class="li-btn li-btn-outline li-btn-sm"
+          onclick="LithiumUI.toast('Critical load failure.', 'danger')">
+          ❌ Error
+        </button>
+      </div>
+    </div>
+
+    <!-- KEYBINDS & PROGRESS -->
+    <div class="demo-card">
+      <div class="demo-card-title">Keybinds &amp; Progress</div>
+      <div class="li-keybind-row">
+        <span class="li-keybind-name">Open Menu</span>
+        <div class="li-keybind-keys"><span class="li-key">INSERT</span></div>
+      </div>
+      <div class="li-keybind-row">
+        <span class="li-keybind-name">Aim Lock</span>
+        <div class="li-keybind-keys"><span class="li-key">RMB</span></div>
+      </div>
+      <div class="li-keybind-row">
+        <span class="li-keybind-name">Panic</span>
+        <div class="li-keybind-keys">
+          <span class="li-key">CTRL</span>
+          <span class="li-key-sep">+</span>
+          <span class="li-key">ALT</span>
+          <span class="li-key-sep">+</span>
+          <span class="li-key">END</span>
+        </div>
+      </div>
+      <div class="li-divider"></div>
+      <div class="li-progress-wrap">
+        <div class="li-progress-header">
+          <span class="li-progress-name">Bypass integrity</span>
+          <span class="li-progress-pct">78%</span>
+        </div>
+        <div class="li-progress-track">
+          <div class="li-progress-fill" style="width: 78%;"></div>
+        </div>
+      </div>
+      <div class="li-progress-wrap">
+        <div class="li-progress-header">
+          <span class="li-progress-name">Memory scan</span>
+          <span class="li-progress-pct">42%</span>
+        </div>
+        <div class="li-progress-track">
+          <div class="li-progress-fill" style="width: 42%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXTENSION DEMO — Window class + addTab + extensions -->
+    <div class="demo-card" style="grid-column: 1 / -1;">
+      <div class="demo-card-title">Window Class · addTab() · Extensions (.use)</div>
+      <div class="demo-ext-row">
+
+        <!-- Live window mount point -->
+        <div class="demo-ext-window" id="ext-demo-mount"></div>
+
+        <!-- API reference -->
+        <div class="demo-ext-docs">
+          <div class="demo-ext-block">
+            <div class="demo-ext-block-label">Create a window</div>
+            <pre class="demo-code">const win = new LithiumUI.Window({
+  title:    'Lithium YourGame',
+  subtitle: 'v1.0',
+  width:    300,
+});
+win.mount(); // appends to document.body</pre>
+          </div>
+          <div class="demo-ext-block">
+            <div class="demo-ext-block-label">Add tabs at any time</div>
+            <pre class="demo-code">win.addTab('main', 'Main', panel => {
+  // populate panel element
+  panel.innerHTML = `...`;
+});
+
+win.addTab('config', 'Config', panel => { ... });
+win.removeTab('config');
+win.activateTab('main');</pre>
+          </div>
+          <div class="demo-ext-block">
+            <div class="demo-ext-block-label">Register an extension</div>
+            <pre class="demo-code">LithiumUI.extend('myExt', (win) => ({
+  id:    'myext',
+  label: 'MyExt',
+  build(panel) {
+    // panel is a li-tab-panel div
+    panel.innerHTML = `...`;
+  },
+}));</pre>
+          </div>
+          <div class="demo-ext-block">
+            <div class="demo-ext-block-label">Mount extensions onto any window</div>
+            <pre class="demo-code">win.use('myExt');       // custom
+win.use('performance'); // built-in
+win.use('credits');     // built-in
+win.use('keybinds');    // built-in</pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /demo-grid -->
+</div><!-- /demo-page -->
+
+<script>
+  /* ============================================================
+     LITHIUM UI — JavaScript API
+     Creator: rightpapi
+  ============================================================ */
+  const LithiumUI = (() => {
+
+    /* ----------------------------------------------------------
+       TOAST SYSTEM
+    ---------------------------------------------------------- */
+    const TOAST_DURATION = 3200;
+    const toastContainer = document.getElementById('li-toast-container');
+
+    const ICONS = {
+      default: '◈',
+      success: '◉',
+      warn:    '◎',
+      danger:  '◌',
+    };
+
+    function toast(message, type = 'default', duration = TOAST_DURATION) {
+      const el = document.createElement('div');
+      el.className = `li-toast${type !== 'default' ? ' ' + type : ''}`;
+      el.innerHTML = `<span class="li-toast-icon">${ICONS[type] ?? ICONS.default}</span>${message}`;
+      toastContainer.appendChild(el);
+
+      const dismiss = () => {
+        el.classList.add('li-toast-out');
+        el.addEventListener('animationend', () => el.remove(), { once: true });
+      };
+
+      const timer = setTimeout(dismiss, duration);
+      el.addEventListener('click', () => { clearTimeout(timer); dismiss(); });
+    }
+
+    /* ----------------------------------------------------------
+       WINDOW DRAG
+    ---------------------------------------------------------- */
+    function makeDraggable(windowEl, handleEl) {
+      let dragging = false;
+      let ox = 0, oy = 0;
+
+      handleEl.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        dragging = true;
+        const rect = windowEl.getBoundingClientRect();
+        ox = e.clientX - rect.left;
+        oy = e.clientY - rect.top;
+        windowEl.style.position = 'fixed';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const parent = windowEl.parentElement?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+        let x = e.clientX - ox - parent.left;
+        let y = e.clientY - oy - parent.top;
+        x = Math.max(0, Math.min(x, parent.width  - windowEl.offsetWidth));
+        y = Math.max(0, Math.min(y, parent.height - windowEl.offsetHeight));
+        windowEl.style.left = x + 'px';
+        windowEl.style.top  = y + 'px';
+      });
+
+      document.addEventListener('mouseup', () => { dragging = false; });
+    }
+
+    /* ----------------------------------------------------------
+       STATIC TAB INIT — wires existing HTML tab markup
+    ---------------------------------------------------------- */
+    function initTabs(containerEl) {
+      const tabs   = containerEl.querySelectorAll(':scope .li-tabs > .li-tab');
+      const panels = containerEl.querySelectorAll(':scope .li-tab-panel');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          panels.forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          const target = containerEl.querySelector(`#tab-${tab.dataset.tab}`);
+          if (target) target.classList.add('active');
+        });
+      });
+    }
+
+    /* ----------------------------------------------------------
+       EXTENSION REGISTRY
+       LithiumUI.extend(name, fn) — register a named extension.
+       fn receives the Window instance and returns an object:
+         { label, id, build(panelEl) }
+       The window's .use(name) method mounts it as a new tab.
+    ---------------------------------------------------------- */
+    const _extensions = {};
+
+    function extend(name, fn) {
+      if (_extensions[name]) {
+        console.warn(`[Lithium] Extension "${name}" is already registered. Skipping.`);
+        return;
+      }
+      _extensions[name] = fn;
+    }
+
+    function _getExtension(name) {
+      return _extensions[name] ?? null;
+    }
+
+    /* ----------------------------------------------------------
+       WINDOW CLASS
+       Wraps a li-window DOM element and exposes:
+         .addTab(id, label, builderFn)  — add a tab at any time
+         .removeTab(id)                 — remove a tab by id
+         .activateTab(id)               — switch to a tab
+         .use(extensionName)            — mount a registered extension
+         .mount(parentEl)               — append to DOM
+         .destroy()                     — remove from DOM
+    ---------------------------------------------------------- */
+    class Window {
+      constructor(options = {}) {
+        const {
+          title    = 'Lithium',
+          subtitle = '',
+          width    = 300,
+          top      = 40,
+          left     = 40,
+        } = options;
+
+        this._tabs   = new Map(); // id → { tabEl, panelEl }
+        this._uid    = `liw-${Math.random().toString(36).slice(2, 8)}`;
+
+        /* Root element */
+        this.el = document.createElement('div');
+        this.el.className = 'li-window';
+        this.el.style.cssText = `top:${top}px;left:${left}px;width:${width}px;position:fixed;`;
+
+        /* Titlebar */
+        this._titlebar = document.createElement('div');
+        this._titlebar.className = 'li-titlebar';
+        this._titlebar.innerHTML = `
+          <div class="li-title-left">
+            <div class="li-logo-mark">Li</div>
+            <span class="li-title-text">${title}</span>
+            ${subtitle ? `<span class="li-title-tag">${subtitle}</span>` : ''}
+          </div>
+          <div class="li-window-controls">
+            <button class="li-control-btn li-close" title="Close">&#x2715;</button>
+          </div>`;
+
+        /* Tab bar (starts hidden; shown once first tab is added) */
+        this._tabBar = document.createElement('div');
+        this._tabBar.className = 'li-tabs';
+        this._tabBar.style.display = 'none';
+
+        /* Body wrapper — holds tab bar + panels */
+        this._body = document.createElement('div');
+        this._body.className = 'li-body';
+        this._body.appendChild(this._tabBar);
+
+        this.el.appendChild(this._titlebar);
+        this.el.appendChild(this._body);
+
+        /* Wire close button */
+        this._titlebar.querySelector('.li-close')
+          .addEventListener('click', () => this.destroy());
+
+        /* Wire drag */
+        makeDraggable(this.el, this._titlebar);
+      }
+
+      /* Add a tab. builderFn(panelEl) — populate the panel element. */
+      addTab(id, label, builderFn) {
+        if (this._tabs.has(id)) {
+          console.warn(`[Lithium] Tab "${id}" already exists on this window.`);
+          return this;
+        }
+
+        /* Tab button */
+        const tabEl = document.createElement('div');
+        tabEl.className = 'li-tab';
+        tabEl.dataset.tab = id;
+        tabEl.textContent = label;
+        tabEl.addEventListener('click', () => this.activateTab(id));
+        this._tabBar.appendChild(tabEl);
+
+        /* Panel */
+        const panelEl = document.createElement('div');
+        panelEl.className = 'li-tab-panel';
+        panelEl.id = `tab-${this._uid}-${id}`;
+        this._body.appendChild(panelEl);
+
+        this._tabs.set(id, { tabEl, panelEl });
+
+        /* Run builder */
+        builderFn(panelEl);
+
+        /* Show tab bar now that we have at least one tab */
+        this._tabBar.style.display = '';
+
+        /* Auto-activate if it's the first tab */
+        if (this._tabs.size === 1) this.activateTab(id);
+
+        return this;
+      }
+
+      /* Remove a tab by id. Activates the previous tab if it was active. */
+      removeTab(id) {
+        const entry = this._tabs.get(id);
+        if (!entry) return this;
+
+        const wasActive = entry.tabEl.classList.contains('active');
+        entry.tabEl.remove();
+        entry.panelEl.remove();
+        this._tabs.delete(id);
+
+        if (this._tabs.size === 0) {
+          this._tabBar.style.display = 'none';
+        } else if (wasActive) {
+          this.activateTab(this._tabs.keys().next().value);
+        }
+
+        return this;
+      }
+
+      /* Switch the active tab. */
+      activateTab(id) {
+        this._tabs.forEach(({ tabEl, panelEl }, key) => {
+          const active = key === id;
+          tabEl.classList.toggle('active', active);
+          panelEl.classList.toggle('active', active);
+        });
+        return this;
+      }
+
+      /* Mount a registered extension as a new tab. */
+      use(extensionName) {
+        const factory = _getExtension(extensionName);
+        if (!factory) {
+          console.error(`[Lithium] Extension "${extensionName}" is not registered.`);
+          return this;
+        }
+        const ext = factory(this);
+        if (!ext?.id || !ext?.label || typeof ext?.build !== 'function') {
+          console.error(`[Lithium] Extension "${extensionName}" must return { id, label, build }.`);
+          return this;
+        }
+        this.addTab(ext.id, ext.label, ext.build.bind(ext));
+        return this;
+      }
+
+      /* Append the window to a parent element (defaults to document.body). */
+      mount(parentEl = document.body) {
+        parentEl.appendChild(this.el);
+        return this;
+      }
+
+      /* Remove from DOM. */
+      destroy() {
+        this.el.remove();
+      }
+    }
+
+    /* ----------------------------------------------------------
+       LEGACY createWindow — kept for backward compatibility.
+       Returns { win, body } as before.
+    ---------------------------------------------------------- */
+    function createWindow(options = {}) {
+      const instance = new Window(options);
+      return { win: instance.el, body: instance._body, instance };
+    }
+
+    /* ----------------------------------------------------------
+       PUBLIC API
+    ---------------------------------------------------------- */
+    return { toast, makeDraggable, initTabs, extend, Window, createWindow };
+  })();
+
+  /* ============================================================
+     BUILT-IN EXTENSIONS
+     Bundled with the library. Scripts call .use('name') to mount.
+  ============================================================ */
+
+  /* --- Credits extension ------------------------------------ */
+  LithiumUI.extend('credits', () => ({
+    id:    'credits',
+    label: 'Credits',
+    build(panelEl) {
+      panelEl.innerHTML = `
+        <div class="li-section-label">Script</div>
+        <div class="li-status-row" style="justify-content:space-between;">
+          <span style="font-size:11px;color:var(--li-text-muted);">Creator</span>
+          <span style="font-family:var(--li-font);font-size:11px;color:var(--li-text);">rightpapi</span>
+        </div>
+        <div class="li-status-row" style="justify-content:space-between;">
+          <span style="font-size:11px;color:var(--li-text-muted);">Library</span>
+          <span style="font-family:var(--li-font);font-size:11px;color:var(--li-text);">Lithium UI</span>
+        </div>
+        <div class="li-divider"></div>
+        <div class="li-section-label">Version</div>
+        <div class="li-status-row" style="justify-content:space-between;">
+          <span style="font-size:11px;color:var(--li-text-muted);">Build</span>
+          <span style="font-family:var(--li-font);font-size:11px;color:var(--li-text-muted);" id="li-credits-ver">—</span>
+        </div>`;
+      /* Stamp build date at mount time */
+      panelEl.querySelector('#li-credits-ver').textContent =
+        new Date().toISOString().slice(0, 10);
+    },
+  }));
+
+  /* --- Keybinds extension ---------------------------------- */
+  LithiumUI.extend('keybinds', (win) => ({
+    id:    'keys',
+    label: 'Keys',
+    _binds: [],
+    addBind(name, keys) { this._binds.push({ name, keys }); return this; },
+    build(panelEl) {
+      if (this._binds.length === 0) {
+        panelEl.innerHTML = `<div style="font-size:11px;color:var(--li-text-dim);padding:4px 0;">No keybinds registered.</div>`;
+        return;
+      }
+      this._binds.forEach(({ name, keys }) => {
+        const row = document.createElement('div');
+        row.className = 'li-keybind-row';
+        const keyPills = keys.map(k => `<span class="li-key">${k}</span>`).join('<span class="li-key-sep">+</span>');
+        row.innerHTML = `<span class="li-keybind-name">${name}</span><div class="li-keybind-keys">${keyPills}</div>`;
+        panelEl.appendChild(row);
+      });
+    },
+  }));
+
+  /* --- Performance extension ------------------------------- */
+  LithiumUI.extend('performance', () => ({
+    id:    'perf',
+    label: 'Perf',
+    _statEls: {},
+    build(panelEl) {
+      panelEl.innerHTML = `
+        <div class="li-section-label">Runtime</div>
+        <div class="li-stat-grid">
+          <div class="li-stat"><div class="li-stat-value" id="li-perf-fps">—</div><div class="li-stat-label">FPS</div></div>
+          <div class="li-stat"><div class="li-stat-value" id="li-perf-mem">—</div><div class="li-stat-label">Heap MB</div></div>
+          <div class="li-stat"><div class="li-stat-value" id="li-perf-up">0s</div><div class="li-stat-label">Uptime</div></div>
+        </div>
+        <div class="li-divider"></div>
+        <div class="li-section-label">Frame budget</div>
+        <div class="li-progress-wrap">
+          <div class="li-progress-header">
+            <span class="li-progress-name">Frame time</span>
+            <span class="li-progress-pct" id="li-perf-ft">—</span>
+          </div>
+          <div class="li-progress-track"><div class="li-progress-fill" id="li-perf-bar" style="width:0%"></div></div>
+        </div>`;
+
+      const fpsEl  = panelEl.querySelector('#li-perf-fps');
+      const memEl  = panelEl.querySelector('#li-perf-mem');
+      const upEl   = panelEl.querySelector('#li-perf-up');
+      const ftEl   = panelEl.querySelector('#li-perf-ft');
+      const barEl  = panelEl.querySelector('#li-perf-bar');
+
+      let frames = 0, lastFpsTime = performance.now(), lastFrame = performance.now();
+      const startTime = performance.now();
+
+      const tick = (now) => {
+        if (!panelEl.isConnected) return; // stop polling when removed
+
+        const delta = now - lastFrame;
+        lastFrame   = now;
+        frames++;
+
+        if (now - lastFpsTime >= 1000) {
+          const fps = Math.round(frames * 1000 / (now - lastFpsTime));
+          fpsEl.textContent = fps;
+          frames = 0;
+          lastFpsTime = now;
+        }
+
+        /* Heap — only available in Chromium */
+        if (performance.memory) {
+          memEl.textContent = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
+        }
+
+        /* Uptime */
+        const secs = Math.floor((now - startTime) / 1000);
+        upEl.textContent = secs < 60 ? `${secs}s` : `${Math.floor(secs/60)}m${secs%60}s`;
+
+        /* Frame budget — target 16.67ms (60fps) */
+        const pct = Math.min(100, Math.round(delta / 16.67 * 100));
+        ftEl.textContent = `${delta.toFixed(1)}ms`;
+        barEl.style.width = `${pct}%`;
+        barEl.style.background = pct > 90 ? 'var(--li-danger)' : pct > 60 ? 'var(--li-warn)' : 'var(--li-text)';
+
+        requestAnimationFrame(tick);
+      };
+
+      requestAnimationFrame(tick);
+    },
+  }));
+
+  /* ============================================================
+     WIRE DEMO COMPONENTS
+  ============================================================ */
+  (() => {
+    /* Static HTML demo window (drag + tabs) */
+    const demoWin    = document.getElementById('demo-window');
+    const demoHandle = document.getElementById('demo-titlebar');
+    if (demoWin && demoHandle) LithiumUI.makeDraggable(demoWin, demoHandle);
+    document.querySelectorAll('.li-window').forEach(c => LithiumUI.initTabs(c));
+
+    /* ----------------------------------------------------------
+       LIVE DEMO — Window class + extensions
+       Spawned into the "Extension Demo" card.
+    ---------------------------------------------------------- */
+    const demoParent = document.getElementById('ext-demo-mount');
+    if (demoParent) {
+      const win = new LithiumUI.Window({
+        title: 'Lithium', subtitle: 'Demo', width: 300, top: 0, left: 0,
+      });
+
+      /* Override position for inline card demo */
+      win.el.style.position = 'relative';
+      win.el.style.top  = '0';
+      win.el.style.left = '0';
+      win.el.style.width = '100%';
+
+      /* Script tab — built inline via addTab */
+      win.addTab('main', 'Main', panel => {
+        panel.innerHTML = `
+          <div class="li-section-label">Features</div>
+          <label class="li-toggle-row">
+            <div class="li-toggle-label">Silent Aim<small>Server-side redirect</small></div>
+            <div class="li-toggle"><input type="checkbox" checked />
+              <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
+            </div>
+          </label>
+          <label class="li-toggle-row">
+            <div class="li-toggle-label">Prediction<small>Lead moving targets</small></div>
+            <div class="li-toggle"><input type="checkbox" />
+              <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
+            </div>
+          </label>
+          <div class="li-divider"></div>
+          <div class="li-slider-row">
+            <div class="li-slider-header">
+              <span class="li-slider-name">FOV</span>
+              <span class="li-slider-value" id="ext-fov-val">80</span>
+            </div>
+            <input class="li-slider" type="range" min="10" max="200" value="80"
+              oninput="document.getElementById('ext-fov-val').textContent=this.value" />
+          </div>`;
+      });
+
+      /* Mount built-in extensions */
+      win.use('performance');
+      win.use('credits');
+
+      /* Custom extension defined inline for this demo */
+      LithiumUI.extend('demo-log', () => ({
+        id: 'log', label: 'Log',
+        build(panel) {
+          panel.innerHTML = `
+            <div class="li-section-label">Event Log</div>
+            <div id="li-demo-log" style="
+              font-family:var(--li-font);font-size:10px;color:var(--li-text-muted);
+              display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;">
+            </div>
+            <button class="li-btn li-btn-outline li-btn-sm li-btn-full" id="li-log-fire">Fire Event</button>`;
+
+          const logEl = panel.querySelector('#li-demo-log');
+          const addLog = (msg, type = 'info') => {
+            const colors = { info: 'var(--li-text-muted)', ok: 'var(--li-success)', err: 'var(--li-danger)', warn: 'var(--li-warn)' };
+            const line = document.createElement('div');
+            line.style.color = colors[type] ?? colors.info;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.prepend(line);
+            if (logEl.children.length > 20) logEl.lastElementChild.remove();
+          };
+          addLog('Log extension mounted.', 'ok');
+          panel.querySelector('#li-log-fire').addEventListener('click', () => {
+            const msgs = ['Target acquired', 'Prediction recalculated', 'FOV updated', 'Frame dropped', 'Memory GC triggered'];
+            const types = ['info', 'ok', 'warn', 'err'];
+            addLog(msgs[Math.floor(Math.random() * msgs.length)], types[Math.floor(Math.random() * types.length)]);
+          });
+        },
+      }));
+      win.use('demo-log');
+
+      win.mount(demoParent);
+    }
+
+    /* Fire load toast */
+    setTimeout(() => LithiumUI.toast('Lithium dose administered.'), 600);
+  })();
+</script>
+</body>
+</html>
