@@ -1,6 +1,6 @@
 -- ============================================================
---  ENTRENCHED WW1 — FIELD OPS SUITE v2.4
---  Safe Speed + expanded UI + extra low-noise features
+--  ENTRENCHED WW1 — FIELD OPS SUITE v2.5
+--  Dual Silent Aim paths + UI contrast fix + QOL
 --  Xeno 84% UNC / 40% sUNC
 -- ============================================================
 
@@ -20,11 +20,10 @@ local Mouse = LocalPlayer:GetMouse()
 --  CONFIG
 -- ============================================================
 local CFG = {
-    -- Aim
     AimbotEnabled = false,
     AimbotKey = Enum.KeyCode.E,
     AimbotPart = "Head",
-    AimbotSmoothing = 0.16,
+    AimbotSmoothing = 0.15,
     AimbotFOV = 200,
     AimbotTeamCheck = true,
     AimbotVisCheck = false,
@@ -34,7 +33,7 @@ local CFG = {
 
     SilentAimEnabled = false,
     SilentAimPart = "Head",
-    SilentAimFOV = 240,
+    SilentAimFOV = 250,
     SilentAimHitChance = 100,
     SilentAimPrediction = true,
     SilentAimBulletSpeed = 920,
@@ -42,8 +41,8 @@ local CFG = {
     SilentAimSticky = true,
     SilentAimTeamCheck = true,
     SilentAimVisCheck = false,
+    SilentAimMethod = "Both", -- "Mouse" / "Ray" / "Both"
 
-    -- ESP
     ESPEnabled = false,
     ESPBoxes = true,
     ESPNames = true,
@@ -55,12 +54,11 @@ local CFG = {
     ESPShowTeam = false,
     ESPNameSize = 13,
     ESPFade = true,
+    ESPBoxThickness = 1.5,
 
-    -- Movement
     SpeedEnabled = false,
-    SpeedMult = 1.38,
+    SpeedMult = 1.35,
 
-    -- Combat
     InfAmmoEnabled = false,
     GodModeEnabled = false,
     NoDigCooldown = false,
@@ -68,61 +66,61 @@ local CFG = {
     TriggerBot = false,
     TriggerBotKey = Enum.KeyCode.Q,
 
-    -- Visual
     FullbrightEnabled = false,
     FOVCircleEnabled = true,
     FOVCircleColor = Color3.fromRGB(214, 156, 33),
-    FOVCircleThickness = 1.5,
-    FOVCircleTrans = 0.15,
+    FOVCircleThickness = 1.6,
+    FOVCircleTrans = 0.2,
+    FOVCircleFill = false,
 
-    -- UI Custom
-    UITheme = "Iron",          -- Iron / Night / Blood / Olive
+    UITheme = "Iron",
     UIScale = 1.0,
-    UIOpacity = 0.92,
-    UIAccent = Color3.fromRGB(214, 156, 33),
+    UIOpacity = 0.94,
     ShowWatermark = true,
     ShowKeybinds = true,
+    ShowNotifs = true,
 }
 
--- Theme presets
 local THEMES = {
     Iron = {
         bg = Color3.fromRGB(28,28,24),
-        light = Color3.fromRGB(38,38,33),
-        mid = Color3.fromRGB(50,50,43),
-        edge = Color3.fromRGB(18,18,15),
+        light = Color3.fromRGB(40,40,34),
+        mid = Color3.fromRGB(52,52,44),
+        edge = Color3.fromRGB(16,16,14),
         accent = Color3.fromRGB(214,156,33),
-        text = Color3.fromRGB(220,210,180),
+        text = Color3.fromRGB(230,220,190),
+        dim = Color3.fromRGB(150,140,120),
     },
     Night = {
-        bg = Color3.fromRGB(18,20,28),
-        light = Color3.fromRGB(28,32,42),
-        mid = Color3.fromRGB(38,44,58),
-        edge = Color3.fromRGB(12,14,20),
+        bg = Color3.fromRGB(16,18,26),
+        light = Color3.fromRGB(26,30,40),
+        mid = Color3.fromRGB(36,42,56),
+        edge = Color3.fromRGB(10,12,18),
         accent = Color3.fromRGB(90,160,255),
-        text = Color3.fromRGB(200,210,230),
+        text = Color3.fromRGB(210,220,240),
+        dim = Color3.fromRGB(120,140,170),
     },
     Blood = {
-        bg = Color3.fromRGB(32,18,18),
-        light = Color3.fromRGB(45,25,25),
-        mid = Color3.fromRGB(60,32,32),
-        edge = Color3.fromRGB(20,10,10),
-        accent = Color3.fromRGB(220,60,60),
-        text = Color3.fromRGB(230,200,200),
+        bg = Color3.fromRGB(30,16,16),
+        light = Color3.fromRGB(44,24,24),
+        mid = Color3.fromRGB(58,30,30),
+        edge = Color3.fromRGB(18,8,8),
+        accent = Color3.fromRGB(220,55,55),
+        text = Color3.fromRGB(240,210,210),
+        dim = Color3.fromRGB(160,110,110),
     },
     Olive = {
-        bg = Color3.fromRGB(24,28,22),
-        light = Color3.fromRGB(34,40,30),
-        mid = Color3.fromRGB(48,56,42),
-        edge = Color3.fromRGB(14,18,12),
-        accent = Color3.fromRGB(140,180,70),
-        text = Color3.fromRGB(210,220,190),
+        bg = Color3.fromRGB(22,26,20),
+        light = Color3.fromRGB(32,38,28),
+        mid = Color3.fromRGB(44,52,38),
+        edge = Color3.fromRGB(12,16,10),
+        accent = Color3.fromRGB(150,190,70),
+        text = Color3.fromRGB(220,230,200),
+        dim = Color3.fromRGB(130,150,110),
     },
 }
 
-local function GetTheme()
-    return THEMES[CFG.UITheme] or THEMES.Iron
-end
+local function T() return THEMES[CFG.UITheme] or THEMES.Iron end
 
 -- ============================================================
 --  SAFE GUI PARENT
@@ -184,6 +182,24 @@ local function Predict(part, speed, mult)
     return part.Position + vel * t * mult
 end
 
+-- simple notification
+local function Notify(msg)
+    if not CFG.ShowNotifs then return end
+    local ok, draw = pcall(Drawing.new, "Text")
+    if not ok or not draw then return end
+    draw.Text = msg
+    draw.Size = 16
+    draw.Center = true
+    draw.Outline = true
+    draw.OutlineColor = Color3.new(0,0,0)
+    draw.Color = T().accent
+    draw.Position = Vector2.new(Camera.ViewportSize.X/2, 60)
+    draw.Visible = true
+    task.delay(1.6, function()
+        pcall(function() draw:Remove() end)
+    end)
+end
+
 -- ============================================================
 --  DRAWING
 -- ============================================================
@@ -196,7 +212,7 @@ local function NewDraw(class, props)
     return o
 end
 
-local FOVCircle = NewDraw("Circle", {Visible=false, Thickness=1.5, Filled=false, NumSides=64})
+local FOVCircle = NewDraw("Circle", {Visible=false, Thickness=1.6, Filled=false, NumSides=64})
 local Watermark = NewDraw("Text", {Visible=false, Size=14, Center=false, Outline=true, OutlineColor=Color3.new(0,0,0)})
 local KeybindText = NewDraw("Text", {Visible=false, Size=13, Center=false, Outline=true, OutlineColor=Color3.new(0,0,0)})
 
@@ -215,7 +231,7 @@ end
 local function MakeESP(p)
     if ESPCache[p] then return end
     ESPCache[p] = {
-        Box = NewDraw("Square", {Visible=false, Thickness=1.4, Filled=false}),
+        Box = NewDraw("Square", {Visible=false, Thickness=CFG.ESPBoxThickness, Filled=false}),
         Name = NewDraw("Text", {Visible=false, Size=CFG.ESPNameSize, Center=true, Outline=true, OutlineColor=Color3.new(0,0,0)}),
         Health = NewDraw("Square", {Visible=false, Thickness=1, Filled=true}),
         HealthBG = NewDraw("Square", {Visible=false, Thickness=1, Filled=true, Color=Color3.fromRGB(30,30,30)}),
@@ -266,14 +282,12 @@ local function UpdateESP()
         local x = topS.X - w/2
         local y = topS.Y
         local col = ESPColor(p)
-        local alpha = 1
-        if CFG.ESPFade then
-            alpha = math.clamp(1 - (dist / CFG.ESPMaxDist), 0.25, 1)
-        end
+        local alpha = CFG.ESPFade and math.clamp(1 - (dist / CFG.ESPMaxDist), 0.3, 1) or 1
 
         if CFG.ESPBoxes and e.Box then
             e.Box.Visible = true
             e.Box.Color = col
+            e.Box.Thickness = CFG.ESPBoxThickness
             e.Box.Transparency = 1 - alpha
             e.Box.Size = Vector2.new(w, h)
             e.Box.Position = Vector2.new(x, y)
@@ -320,7 +334,7 @@ local function UpdateESP()
 end
 
 Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function() task.wait(0.7) MakeESP(p) end)
+    p.CharacterAdded:Connect(function() task.wait(0.6) MakeESP(p) end)
 end)
 Players.PlayerRemoving:Connect(KillESP)
 for _, p in ipairs(Players:GetPlayers()) do if p ~= LocalPlayer then MakeESP(p) end end
@@ -368,43 +382,87 @@ local function GetClosest(silent)
 end
 
 -- ============================================================
---  SILENT AIM (best-effort)
+--  DUAL SILENT AIM
 -- ============================================================
 local SilentOn = false
 local oldIndex
+local oldNamecall
 
 local function EnableSilent()
     if SilentOn then return end
+
+    -- Method 1: Mouse.Hit
     local ok, mt = pcall(getrawmetatable, game)
-    if not ok or not mt then return end
-    oldIndex = mt.__index
-    pcall(setreadonly, mt, false)
-    mt.__index = newcclosure(function(self, key)
-        if CFG.SilentAimEnabled and self == Mouse and key == "Hit" then
-            if math.random(1,100) > CFG.SilentAimHitChance then return oldIndex(self, key) end
-            local _, pos = GetClosest(true)
-            if pos then return CFrame.new(pos) end
+    if ok and mt then
+        oldIndex = mt.__index
+        pcall(setreadonly, mt, false)
+        mt.__index = newcclosure(function(self, key)
+            if CFG.SilentAimEnabled and (CFG.SilentAimMethod == "Mouse" or CFG.SilentAimMethod == "Both") then
+                if self == Mouse and key == "Hit" then
+                    if math.random(1,100) > CFG.SilentAimHitChance then return oldIndex(self, key) end
+                    local _, pos = GetClosest(true)
+                    if pos then return CFrame.new(pos) end
+                end
+            end
+            return oldIndex(self, key)
+        end)
+        pcall(setreadonly, mt, true)
+    end
+
+    -- Method 2: Camera ray redirect (ScreenPointToRay / ViewportPointToRay)
+    pcall(function()
+        local camMt = getrawmetatable(Camera)
+        if camMt then
+            oldNamecall = camMt.__namecall
+            pcall(setreadonly, camMt, false)
+            camMt.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                if CFG.SilentAimEnabled and (CFG.SilentAimMethod == "Ray" or CFG.SilentAimMethod == "Both") then
+                    if method == "ScreenPointToRay" or method == "ViewportPointToRay" then
+                        if math.random(1,100) <= CFG.SilentAimHitChance then
+                            local _, pos = GetClosest(true)
+                            if pos then
+                                local origin = Camera.CFrame.Position
+                                return Ray.new(origin, (pos - origin).Unit * 1000)
+                            end
+                        end
+                    end
+                end
+                return oldNamecall(self, ...)
+            end)
+            pcall(setreadonly, camMt, true)
         end
-        return oldIndex(self, key)
     end)
-    pcall(setreadonly, mt, true)
+
     SilentOn = true
+    Notify("Silent Aim ON")
 end
 
 local function DisableSilent()
     if not SilentOn then return end
-    local ok, mt = pcall(getrawmetatable, game)
-    if ok and mt and oldIndex then
-        pcall(setreadonly, mt, false)
-        mt.__index = oldIndex
-        pcall(setreadonly, mt, true)
-    end
+    pcall(function()
+        local mt = getrawmetatable(game)
+        if mt and oldIndex then
+            setreadonly(mt, false)
+            mt.__index = oldIndex
+            setreadonly(mt, true)
+        end
+    end)
+    pcall(function()
+        local camMt = getrawmetatable(Camera)
+        if camMt and oldNamecall then
+            setreadonly(camMt, false)
+            camMt.__namecall = oldNamecall
+            setreadonly(camMt, true)
+        end
+    end)
     SilentOn = false
     Sticky = nil
+    Notify("Silent Aim OFF")
 end
 
 -- ============================================================
---  SAFE SPEED (no WalkSpeed write)
+--  SAFE SPEED
 -- ============================================================
 local SpeedConn
 local function StartSpeed()
@@ -426,13 +484,12 @@ local function StartSpeed()
         )
     end)
 end
-
 local function StopSpeed()
     if SpeedConn then SpeedConn:Disconnect() SpeedConn = nil end
 end
 
 -- ============================================================
---  OTHER
+--  OTHER FEATURES
 -- ============================================================
 local GodConn
 local function EnableGod()
@@ -523,14 +580,19 @@ local function SetFullbright(on)
 end
 
 -- ============================================================
---  CHARACTER + MAIN
+--  CHARACTER + LOOP
 -- ============================================================
 local function OnChar(char)
-    task.wait(1.1)
+    task.wait(1.0)
     if CFG.GodModeEnabled then EnableGod() end
     if CFG.InfAmmoEnabled then HookAmmo() end
     if CFG.NoDigCooldown then PatchDig() end
     if CFG.SpeedEnabled then StartSpeed() end
+    if CFG.SilentAimEnabled then
+        DisableSilent()
+        task.wait(0.1)
+        EnableSilent()
+    end
 end
 LocalPlayer.CharacterAdded:Connect(OnChar)
 if LocalPlayer.Character then task.spawn(OnChar, LocalPlayer.Character) end
@@ -541,7 +603,6 @@ local TriggerHeld = false
 RunService.RenderStepped:Connect(function()
     pcall(UpdateESP)
 
-    -- FOV + Watermark + Keybinds
     if FOVCircle then
         local show = CFG.FOVCircleEnabled and (CFG.AimbotEnabled or CFG.SilentAimEnabled)
         FOVCircle.Visible = show
@@ -551,15 +612,16 @@ RunService.RenderStepped:Connect(function()
             FOVCircle.Color = CFG.FOVCircleColor
             FOVCircle.Thickness = CFG.FOVCircleThickness
             FOVCircle.Transparency = CFG.FOVCircleTrans
+            FOVCircle.Filled = CFG.FOVCircleFill
         end
     end
 
     if Watermark then
         Watermark.Visible = CFG.ShowWatermark
         if CFG.ShowWatermark then
-            Watermark.Text = "FIELD OPS  v2.4  |  " .. math.floor(Workspace:GetRealPhysicsFPS()) .. " fps"
+            Watermark.Text = "FIELD OPS  v2.5  |  " .. math.floor(Workspace:GetRealPhysicsFPS()) .. " fps"
             Watermark.Position = Vector2.new(12, 8)
-            Watermark.Color = GetTheme().accent
+            Watermark.Color = T().accent
         end
     end
 
@@ -568,16 +630,15 @@ RunService.RenderStepped:Connect(function()
         if CFG.ShowKeybinds then
             local lines = {}
             if CFG.AimbotEnabled then table.insert(lines, "[E] Aimbot") end
-            if CFG.SilentAimEnabled then table.insert(lines, "[SA] Silent") end
+            if CFG.SilentAimEnabled then table.insert(lines, "[SA] Silent ("..CFG.SilentAimMethod..")") end
             if CFG.SpeedEnabled then table.insert(lines, "[SPD] Safe Speed") end
             if CFG.TriggerBot then table.insert(lines, "[Q] Trigger") end
             KeybindText.Text = table.concat(lines, "\n")
             KeybindText.Position = Vector2.new(12, 28)
-            KeybindText.Color = GetTheme().text
+            KeybindText.Color = T().text
         end
     end
 
-    -- Aimbot
     if CFG.AimbotEnabled and AimHeld then
         local _, pos = GetClosest(false)
         if pos then
@@ -585,14 +646,10 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Triggerbot (fires only when already looking at enemy)
     if CFG.TriggerBot and TriggerHeld then
         local target = GetClosest(false)
         if target then
-            -- simple mouse click simulation if the crosshair is already close
-            pcall(function()
-                mouse1click()
-            end)
+            pcall(function() mouse1click() end)
         end
     end
 
@@ -614,9 +671,9 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- ============================================================
---  UI (custom themes + scale + opacity)
+--  UI (high contrast + working theme dropdown)
 -- ============================================================
-local COL = GetTheme()
+local COL = T()
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "EntSuite"
@@ -626,8 +683,8 @@ ScreenGui.DisplayOrder = 999
 ScreenGui.Parent = GetGuiParent()
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 470 * CFG.UIScale, 0, 580 * CFG.UIScale)
-Main.Position = UDim2.new(0, 80, 0, 40)
+Main.Size = UDim2.new(0, 480 * CFG.UIScale, 0, 600 * CFG.UIScale)
+Main.Position = UDim2.new(0, 70, 0, 30)
 Main.BackgroundColor3 = COL.bg
 Main.BackgroundTransparency = 1 - CFG.UIOpacity
 Main.BorderColor3 = COL.edge
@@ -651,14 +708,13 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1,-50,1,0)
 Title.Position = UDim2.new(0,12,0,0)
 Title.BackgroundTransparency = 1
-Title.Text = "ENTRENCHED  //  FIELD OPS v2.4"
+Title.Text = "ENTRENCHED  //  FIELD OPS v2.5"
 Title.TextColor3 = COL.text
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TitleBar
 
--- drag
 local dragging, dragStart, startPos
 TitleBar.InputBegan:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -709,7 +765,7 @@ for i, name in ipairs(TABS) do
     b.Text = name
     b.Font = Enum.Font.GothamBold
     b.TextSize = 10
-    b.TextColor3 = Color3.fromRGB(140,100,20)
+    b.TextColor3 = COL.dim
     b.LayoutOrder = i
     b.Parent = TabScroll
     Buttons[i] = b
@@ -729,13 +785,12 @@ end
 local function Switch(i)
     for k, p in ipairs(Panels) do p.Visible = (k == i) end
     for k, b in ipairs(Buttons) do
-        b.TextColor3 = (k == i) and COL.accent or Color3.fromRGB(140,100,20)
+        b.TextColor3 = (k == i) and COL.accent or COL.dim
         b.BackgroundColor3 = (k == i) and COL.mid or COL.edge
     end
 end
 for i, b in ipairs(Buttons) do b.MouseButton1Click:Connect(function() Switch(i) end) end
 
--- UI helpers (same pattern as before, shortened for length)
 local function Header(parent, text, y)
     local br = Instance.new("Frame")
     br.Size = UDim2.new(0,3,0,14)
@@ -821,6 +876,7 @@ local function Toggle(parent, text, y, key, cb)
         CFG[key] = on
         refresh()
         if cb then cb(on) end
+        if CFG.ShowNotifs then Notify(text .. (on and " ON" or " OFF")) end
     end)
 end
 
@@ -860,7 +916,7 @@ local function Slider(parent, text, y, key, minv, maxv, def, cb)
     local track = Instance.new("Frame")
     track.Size = UDim2.new(1,-20,0,8)
     track.Position = UDim2.new(0,10,0,28)
-    track.BackgroundColor3 = Color3.fromRGB(22,22,18)
+    track.BackgroundColor3 = Color3.fromRGB(20,20,18)
     track.BorderColor3 = COL.edge
     track.BorderSizePixel = 1
     track.Parent = row
@@ -905,6 +961,7 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
     wrap.Size = UDim2.new(1,0,0,BASE)
     wrap.Position = UDim2.new(0,0,0,y)
     wrap.BackgroundTransparency = 1
+    wrap.ZIndex = 50
     wrap.Parent = parent
 
     local row = Instance.new("Frame")
@@ -912,7 +969,7 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
     row.BackgroundColor3 = COL.light
     row.BorderColor3 = COL.edge
     row.BorderSizePixel = 1
-    row.ZIndex = 5
+    row.ZIndex = 50
     row.Parent = wrap
 
     local lab = Instance.new("TextLabel")
@@ -924,7 +981,7 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
     lab.Font = Enum.Font.Gotham
     lab.TextSize = 12
     lab.TextXAlignment = Enum.TextXAlignment.Left
-    lab.ZIndex = 5
+    lab.ZIndex = 51
     lab.Parent = row
 
     local sel = Instance.new("TextLabel")
@@ -936,7 +993,7 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
     sel.Font = Enum.Font.GothamBold
     sel.TextSize = 11
     sel.TextXAlignment = Enum.TextXAlignment.Right
-    sel.ZIndex = 5
+    sel.ZIndex = 51
     sel.Parent = row
 
     local list = Instance.new("Frame")
@@ -946,7 +1003,7 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
     list.BorderColor3 = COL.accent
     list.BorderSizePixel = 1
     list.Visible = false
-    list.ZIndex = 20
+    list.ZIndex = 100
     list.Parent = wrap
 
     for i, opt in ipairs(opts) do
@@ -956,15 +1013,16 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
         it.BackgroundColor3 = COL.mid
         it.BorderSizePixel = 0
         it.Text = opt
-        it.TextColor3 = (opt==def) and COL.accent or Color3.fromRGB(130,120,100)
+        it.TextColor3 = (opt==def) and COL.accent or COL.dim
         it.Font = Enum.Font.Gotham
         it.TextSize = 11
-        it.ZIndex = 20
+        it.ZIndex = 101
         it.Parent = list
         it.MouseButton1Click:Connect(function()
             sel.Text = opt
             CFG[key] = opt
             list.Visible = false
+            wrap.Size = UDim2.new(1,0,0,BASE)
             if cb then cb(opt) end
         end)
     end
@@ -973,17 +1031,16 @@ local function Dropdown(parent, text, y, key, opts, def, cb)
     btn.Size = UDim2.new(1,0,1,0)
     btn.BackgroundTransparency = 1
     btn.Text = ""
-    btn.ZIndex = 6
+    btn.ZIndex = 52
     btn.Parent = row
     btn.MouseButton1Click:Connect(function()
         list.Visible = not list.Visible
-        wrap.Size = list.Visible and UDim2.new(1,0,0,BASE+#opts*ITEM) or UDim2.new(1,0,0,BASE)
+        wrap.Size = list.Visible and UDim2.new(1,0,0,BASE + #opts*ITEM) or UDim2.new(1,0,0,BASE)
     end)
 end
 
--- Build all tabs
+-- Build tabs
 local y
--- AIMBOT
 y=8 Header(Panels[1],"TARGETING",y) y=y+24
 Toggle(Panels[1],"Aimbot",y,"AimbotEnabled") y=y+30
 Toggle(Panels[1],"Team Check",y,"AimbotTeamCheck") y=y+30
@@ -991,26 +1048,25 @@ Toggle(Panels[1],"Visibility Check",y,"AimbotVisCheck") y=y+30
 Toggle(Panels[1],"Prediction",y,"AimbotPrediction") y=y+32
 Header(Panels[1],"PARAMETERS",y) y=y+24
 Slider(Panels[1],"FOV",y,"AimbotFOV",20,500,200) y=y+48
-Slider(Panels[1],"Smoothing x100",y,"AimbotSmoothing",5,70,16,function(v) CFG.AimbotSmoothing=v/100 end) y=y+48
+Slider(Panels[1],"Smoothing x100",y,"AimbotSmoothing",5,60,15,function(v) CFG.AimbotSmoothing=v/100 end) y=y+48
 Slider(Panels[1],"Bullet Speed",y,"AimbotBulletSpeed",300,1600,920) y=y+48
 Slider(Panels[1],"Predict Mult x100",y,"AimbotPredictMult",70,140,108,function(v) CFG.AimbotPredictMult=v/100 end) y=y+48
 Dropdown(Panels[1],"Aim Part",y,"AimbotPart",{"Head","HumanoidRootPart","UpperTorso"},"Head")
 
--- SILENT
 y=8 Header(Panels[2],"SILENT AIM",y) y=y+24
 Toggle(Panels[2],"Silent Aim",y,"SilentAimEnabled",function(v) if v then EnableSilent() else DisableSilent() end end) y=y+30
 Toggle(Panels[2],"Sticky Lock",y,"SilentAimSticky") y=y+30
 Toggle(Panels[2],"Team Check",y,"SilentAimTeamCheck") y=y+30
 Toggle(Panels[2],"Visibility Check",y,"SilentAimVisCheck") y=y+30
 Toggle(Panels[2],"Prediction",y,"SilentAimPrediction") y=y+32
-Header(Panels[2],"CONFIG",y) y=y+24
-Slider(Panels[2],"Silent FOV",y,"SilentAimFOV",20,500,240) y=y+48
+Header(Panels[2],"METHOD + CONFIG",y) y=y+24
+Dropdown(Panels[2],"Silent Method",y,"SilentAimMethod",{"Mouse","Ray","Both"},"Both") y=y+40
+Slider(Panels[2],"Silent FOV",y,"SilentAimFOV",20,500,250) y=y+48
 Slider(Panels[2],"Hit Chance %",y,"SilentAimHitChance",10,100,100) y=y+48
 Slider(Panels[2],"Bullet Speed",y,"SilentAimBulletSpeed",300,1600,920) y=y+48
 Slider(Panels[2],"Predict Mult x100",y,"SilentAimPredictMult",70,140,108,function(v) CFG.SilentAimPredictMult=v/100 end) y=y+48
 Dropdown(Panels[2],"Aim Part",y,"SilentAimPart",{"Head","HumanoidRootPart","UpperTorso"},"Head")
 
--- ESP
 y=8 Header(Panels[3],"ESP",y) y=y+24
 Toggle(Panels[3],"ESP Enabled",y,"ESPEnabled") y=y+30
 Toggle(Panels[3],"Boxes",y,"ESPBoxes") y=y+30
@@ -1022,40 +1078,41 @@ Toggle(Panels[3],"Team Colors",y,"ESPTeamColor") y=y+30
 Toggle(Panels[3],"Show Team",y,"ESPShowTeam") y=y+30
 Toggle(Panels[3],"Distance Fade",y,"ESPFade") y=y+32
 Slider(Panels[3],"Max Dist",y,"ESPMaxDist",100,2500,1100) y=y+48
-Slider(Panels[3],"Name Size",y,"ESPNameSize",10,20,13)
+Slider(Panels[3],"Name Size",y,"ESPNameSize",10,20,13) y=y+48
+Slider(Panels[3],"Box Thickness x10",y,"ESPBoxThickness",8,30,15,function(v) CFG.ESPBoxThickness=v/10 end)
 
--- COMBAT
 y=8 Header(Panels[4],"COMBAT",y) y=y+24
 Toggle(Panels[4],"Infinite Ammo",y,"InfAmmoEnabled",function(v) if v then HookAmmo() end end) y=y+30
 Toggle(Panels[4],"God Mode",y,"GodModeEnabled",function(v) if v then EnableGod() else DisableGod() end end) y=y+30
 Toggle(Panels[4],"No Dig Cooldown",y,"NoDigCooldown",function(v) if v then PatchDig() end end) y=y+30
 Toggle(Panels[4],"Trigger Bot (Q)",y,"TriggerBot")
 
--- MOVE
 y=8 Header(Panels[5],"MOVEMENT",y) y=y+24
 Toggle(Panels[5],"Safe Speed",y,"SpeedEnabled",function(v) if v then StartSpeed() else StopSpeed() end end) y=y+30
-Slider(Panels[5],"Speed Mult x100",y,"SpeedMult",115,165,138,function(v) CFG.SpeedMult=v/100 end) y=y+52
+Slider(Panels[5],"Speed Mult x100",y,"SpeedMult",115,160,135,function(v) CFG.SpeedMult=v/100 end) y=y+52
 Toggle(Panels[5],"Noclip",y,"NoclipEnabled",function(v) if v then EnableNoclip() else DisableNoclip() end end)
 
--- VISUAL
 y=8 Header(Panels[6],"VISUAL",y) y=y+24
 Toggle(Panels[6],"Fullbright",y,"FullbrightEnabled",function(v) SetFullbright(v) end) y=y+30
 Toggle(Panels[6],"FOV Circle",y,"FOVCircleEnabled") y=y+30
+Toggle(Panels[6],"FOV Fill",y,"FOVCircleFill") y=y+30
 Toggle(Panels[6],"Watermark",y,"ShowWatermark") y=y+30
-Toggle(Panels[6],"Keybind List",y,"ShowKeybinds") y=y+32
-Slider(Panels[6],"FOV Thickness x10",y,"FOVCircleThickness",5,30,15,function(v) CFG.FOVCircleThickness=v/10 end)
+Toggle(Panels[6],"Keybind List",y,"ShowKeybinds") y=y+30
+Toggle(Panels[6],"Notifications",y,"ShowNotifs") y=y+32
+Slider(Panels[6],"FOV Thickness x10",y,"FOVCircleThickness",8,30,16,function(v) CFG.FOVCircleThickness=v/10 end)
 
--- UI CUSTOM
 y=8 Header(Panels[7],"INTERFACE",y) y=y+24
 Dropdown(Panels[7],"Theme",y,"UITheme",{"Iron","Night","Blood","Olive"},"Iron",function(v)
-    -- theme change requires reload for full effect
+    Notify("Theme set to "..v.." — reload script for full recolor")
 end) y=y+40
 Slider(Panels[7],"UI Scale x100",y,"UIScale",80,130,100,function(v) CFG.UIScale=v/100 end) y=y+48
-Slider(Panels[7],"Opacity x100",y,"UIOpacity",50,100,92,function(v) CFG.UIOpacity=v/100 Main.BackgroundTransparency=1-CFG.UIOpacity end)
+Slider(Panels[7],"Opacity x100",y,"UIOpacity",55,100,94,function(v)
+    CFG.UIOpacity = v/100
+    Main.BackgroundTransparency = 1 - CFG.UIOpacity
+end)
 
 Switch(1)
 
--- Minimize
 local Min = Instance.new("TextButton")
 Min.Size = UDim2.new(0,22,0,22)
 Min.AnchorPoint = Vector2.new(1,0.5)
@@ -1064,7 +1121,7 @@ Min.BackgroundColor3 = COL.mid
 Min.BorderColor3 = COL.edge
 Min.BorderSizePixel = 1
 Min.Text = "—"
-Min.TextColor3 = Color3.fromRGB(130,120,100)
+Min.TextColor3 = COL.dim
 Min.Font = Enum.Font.GothamBold
 Min.TextSize = 12
 Min.Parent = TitleBar
@@ -1075,8 +1132,8 @@ Min.MouseButton1Click:Connect(function()
     TabScroll.Visible = not mini
     Content.Visible = not mini
     Min.Text = mini and "+" or "—"
-    Main.Size = mini and UDim2.new(0,470*CFG.UIScale,0,40) or UDim2.new(0,470*CFG.UIScale,0,580*CFG.UIScale)
+    Main.Size = mini and UDim2.new(0,480*CFG.UIScale,0,40) or UDim2.new(0,480*CFG.UIScale,0,600*CFG.UIScale)
 end)
 
 EnableSilent()
-print("[Field Ops v2.4] Safe Speed + UI themes + extra features online")
+print("[Field Ops v2.5] Dual silent paths + UI contrast + QOL online")
