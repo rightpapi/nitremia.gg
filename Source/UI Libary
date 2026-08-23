@@ -35,8 +35,21 @@ local MONO = Enum.Font.Code
 local UI   = Enum.Font.Gotham
 local BOLD = Enum.Font.GothamBold
 
-local SCALE = IS_MOBILE and 1.25 or 1.0
-local function sc(n) return math.floor(n * SCALE) end
+local function getViewport()
+    local cam = workspace.CurrentCamera
+    return cam and cam.ViewportSize or Vector2.new(1024, 768)
+end
+
+local function getUIScale()
+    if not IS_MOBILE then return 1.0 end
+    local v = getViewport()
+    -- Keep the UI compact enough for iPad portrait and landscape.
+    -- 768x1024 -> ~0.92, 1024x768 -> 1.00
+    return math.clamp(math.min(v.X / 830, v.Y / 760), 0.88, 1.0)
+end
+
+local SCALE = getUIScale()
+local function sc(n) return math.max(1, math.floor(n * SCALE)) end
 
 -- ============================================================
 -- HELPERS
@@ -387,9 +400,9 @@ end
 -- ============================================================
 -- ROOT GUI
 -- ============================================================
-local WIN_W = IS_MOBILE and 0 or 860
-local WIN_H = IS_MOBILE and 0 or 520
-local NAV_H = sc(44)
+local WIN_W = 860
+local WIN_H = 520
+local NAV_H = sc(IS_MOBILE and 42 or 44)
 
 local gui=Instance.new("ScreenGui")
 gui.Name="Nitremia_Hub"; gui.ResetOnSpawn=false
@@ -401,7 +414,18 @@ initToast(gui)
 
 local win
 if IS_MOBILE then
-    win=fr(gui,UDim2.new(1,0,1,0),UDim2.new(0,0,0,0),T.bg)
+    local vp = getViewport()
+    -- iPad-friendly: leave a small margin around the menu and never
+    -- exceed the available viewport in either orientation.
+    local mobileW = math.min(vp.X - 24, 860)
+    local mobileH = math.min(vp.Y - 32, 620)
+    win=fr(
+        gui,
+        UDim2.new(0, mobileW, 0, mobileH),
+        UDim2.new(0.5, -mobileW/2, 0.5, -mobileH/2),
+        T.bg
+    )
+    corner(win,8); stroke(win,T.borderDim,1)
 else
     win=fr(gui,UDim2.new(0,WIN_W,0,WIN_H),UDim2.new(0.5,-WIN_W/2,0.5,-WIN_H/2),T.bg)
     corner(win,8); stroke(win,T.borderDim,1)
@@ -529,12 +553,26 @@ if IS_MOBILE then
     ml.Parent=mob; pad(ml,0,8,0,8)
 end
 
-local navTabsX=IS_MOBILE and sc(160) or sc(140)
-local navTabs=fr(nav,UDim2.new(1,-(navTabsX+sc(60)),1,0),UDim2.new(0,navTabsX,0,0),nil,1)
+local navTabsX=IS_MOBILE and sc(118) or sc(140)
+local navTabs
+if IS_MOBILE then
+    navTabs=Instance.new("ScrollingFrame")
+    navTabs.Size=UDim2.new(1,-(navTabsX+sc(46)),1,0)
+    navTabs.Position=UDim2.new(0,navTabsX,0,0)
+    navTabs.BackgroundTransparency=1
+    navTabs.BorderSizePixel=0
+    navTabs.ScrollBarThickness=0
+    navTabs.ScrollingDirection=Enum.ScrollingDirection.X
+    navTabs.AutomaticCanvasSize=Enum.AutomaticSize.X
+    navTabs.CanvasSize=UDim2.new(0,0,0,0)
+    navTabs.Parent=nav
+else
+    navTabs=fr(nav,UDim2.new(1,-(navTabsX+sc(60)),1,0),UDim2.new(0,navTabsX,0,0),nil,1)
+end
 hlist(navTabs,2)
 
 local closeBtn=Instance.new("TextButton")
-closeBtn.Size=UDim2.new(0,sc(26),0,sc(26)); closeBtn.Position=UDim2.new(1,-sc(36),0.5,-sc(13))
+closeBtn.Size=UDim2.new(0,sc(IS_MOBILE and 24 or 26),0,sc(IS_MOBILE and 24 or 26)); closeBtn.Position=UDim2.new(1,-sc(IS_MOBILE and 32 or 36),0.5,-sc(IS_MOBILE and 12 or 13))
 closeBtn.BackgroundColor3=T.surface; closeBtn.BorderSizePixel=0
 closeBtn.Text="✕"; closeBtn.TextSize=sc(11); closeBtn.TextColor3=T.textMuted
 closeBtn.Font=MONO; closeBtn.ZIndex=20; closeBtn.Parent=nav
@@ -608,7 +646,7 @@ local homePage=addPage("home","Home")
 local homeScroll=mkScroll(homePage,UDim2.new(1,0,1,0))
 local homeInner=fr(homeScroll,UDim2.new(1,0,0,0),nil,nil,1)
 homeInner.AutomaticSize=Enum.AutomaticSize.Y
-vlist(homeInner,sc(14)); pad(homeInner,sc(22),sc(24),sc(22),sc(24))
+vlist(homeInner,sc(IS_MOBILE and 10 or 14)); pad(homeInner,sc(IS_MOBILE and 14 or 22),sc(IS_MOBILE and 16 or 24),sc(IS_MOBILE and 14 or 22),sc(IS_MOBILE and 16 or 24))
 
 -- Greeting
 local greetWrap=fr(homeInner,UDim2.new(1,0,0,0),nil,nil,1)
@@ -651,7 +689,7 @@ local function mkStatCard(p, topLbl, valTxt, subTxt, order, valCol)
 end
 
 -- Row 1: Uptime + Connection (+ Place ID + Players on desktop)
-local cardsRow1=fr(homeInner,UDim2.new(1,0,0,sc(84)),nil,nil,1)
+local cardsRow1=fr(homeInner,UDim2.new(1,0,0,sc(IS_MOBILE and 72 or 84)),nil,nil,1)
 cardsRow1.LayoutOrder=2; hlist(cardsRow1,sc(12))
 
 local _,uptVal  =mkStatCard(cardsRow1,"Uptime",     "00:00:00",                  "Since attach",1)
@@ -660,7 +698,7 @@ local _,connVal =mkStatCard(cardsRow1,"Connection", "Active",                   
 local cardsRow2
 if IS_MOBILE then
     -- Row 2 mobile: Place ID + Players
-    cardsRow2=fr(homeInner,UDim2.new(1,0,0,sc(84)),nil,nil,1)
+    cardsRow2=fr(homeInner,UDim2.new(1,0,0,sc(IS_MOBILE and 72 or 84)),nil,nil,1)
     cardsRow2.LayoutOrder=3; hlist(cardsRow2,sc(12))
     mkStatCard(cardsRow2,"Place ID",tostring(game.PlaceId),"N/A",           1)
     local _,pv=mkStatCard(cardsRow2,"Players", tostring(#Players:GetPlayers()),"In server",2)
@@ -752,7 +790,7 @@ bl.Parent=badge; pad(bl,0,sc(8),0,sc(8))
 
 -- Nearby card
 local nearbyW=IS_MOBILE and 0 or (860-sc(48)-sysW-sc(12))
-local nearbyCard=fr(bottomRow,IS_MOBILE and UDim2.new(1,0,0,sc(200)) or UDim2.new(0,nearbyW,1,0),nil,T.surface)
+local nearbyCard=fr(bottomRow,IS_MOBILE and UDim2.new(1,0,0,sc(170)) or UDim2.new(0,nearbyW,1,0),nil,T.surface)
 nearbyCard.LayoutOrder=2; corner(nearbyCard,6); stroke(nearbyCard,T.borderGhost,1)
 local nearbyHdr=fr(nearbyCard,UDim2.new(1,0,0,sc(36)),nil,nil,1); pad(nearbyHdr,0,sc(16),0,sc(16))
 local nlbl=Instance.new("TextLabel")
@@ -796,9 +834,9 @@ local playersPage=addPage("players","Players")
 local plTitle=Instance.new("TextLabel")
 plTitle.Text="Players in Server"; plTitle.TextSize=sc(15); plTitle.Font=BOLD
 plTitle.TextColor3=T.text; plTitle.BackgroundTransparency=1
-plTitle.Size=UDim2.new(1,-sc(48),0,sc(24)); plTitle.Position=UDim2.new(0,sc(24),0,sc(12))
+plTitle.Size=UDim2.new(1,-sc(IS_MOBILE and 24 or 48),0,sc(24)); plTitle.Position=UDim2.new(0,sc(IS_MOBILE and 12 or 24),0,sc(10))
 plTitle.TextXAlignment=Enum.TextXAlignment.Left; plTitle.Parent=playersPage
-local plScroll=mkScroll(playersPage,UDim2.new(1,-sc(48),1,-sc(44)),UDim2.new(0,sc(24),0,sc(44)))
+local plScroll=mkScroll(playersPage,UDim2.new(1,-sc(IS_MOBILE and 24 or 48),1,-sc(IS_MOBILE and 42 or 44)),UDim2.new(0,sc(IS_MOBILE and 12 or 24),0,sc(IS_MOBILE and 42 or 44)))
 local plList=fr(plScroll,UDim2.new(1,0,0,0),nil,nil,1)
 plList.AutomaticSize=Enum.AutomaticSize.Y; vlist(plList,sc(6))
 local function refreshPlayerList()
@@ -829,7 +867,7 @@ task.spawn(function() while gui.Parent do task.wait(4); refreshPlayerList() end 
 -- VISUALS PAGE
 -- ============================================================
 local visualsPage=addPage("visuals","Visuals")
-local visScroll=mkScroll(visualsPage,UDim2.new(1,-sc(48),1,0),UDim2.new(0,sc(24),0,0))
+local visScroll=mkScroll(visualsPage,UDim2.new(1,-sc(IS_MOBILE and 24 or 48),1,0),UDim2.new(0,sc(IS_MOBILE and 12 or 24),0,0))
 local visInner=fr(visScroll,UDim2.new(1,0,0,0),nil,nil,1)
 visInner.AutomaticSize=Enum.AutomaticSize.Y; vlist(visInner,sc(8)); pad(visInner,sc(16),0,sc(16),0)
 secLabel(visInner,"ESP",1)
@@ -851,7 +889,7 @@ mkSlider(visInner,"Tracer Length",1,100,50,14)
 -- AIMBOT PAGE
 -- ============================================================
 local aimbotPage=addPage("aimbot","Aimbot")
-local aimScroll=mkScroll(aimbotPage,UDim2.new(1,-sc(48),1,0),UDim2.new(0,sc(24),0,0))
+local aimScroll=mkScroll(aimbotPage,UDim2.new(1,-sc(IS_MOBILE and 24 or 48),1,0),UDim2.new(0,sc(IS_MOBILE and 12 or 24),0,0))
 local aimInner=fr(aimScroll,UDim2.new(1,0,0,0),nil,nil,1)
 aimInner.AutomaticSize=Enum.AutomaticSize.Y; vlist(aimInner,sc(8)); pad(aimInner,sc(16),0,sc(16),0)
 secLabel(aimInner,"Core",1)
@@ -873,7 +911,7 @@ mkToggle(aimInner,"Lowest Health",       "Switch at health threshold",false,14)
 -- SETTINGS PAGE
 -- ============================================================
 local settingsPage=addPage("settings","Settings")
-local setScroll=mkScroll(settingsPage,UDim2.new(1,-sc(48),1,0),UDim2.new(0,sc(24),0,0))
+local setScroll=mkScroll(settingsPage,UDim2.new(1,-sc(IS_MOBILE and 24 or 48),1,0),UDim2.new(0,sc(IS_MOBILE and 12 or 24),0,0))
 local setInner=fr(setScroll,UDim2.new(1,0,0,0),nil,nil,1)
 setInner.AutomaticSize=Enum.AutomaticSize.Y; vlist(setInner,sc(8)); pad(setInner,sc(16),0,sc(16),0)
 secLabel(setInner,"Interface",1)
@@ -904,6 +942,25 @@ infoRow(aboutCol,"Hub",      "Nitremia.gg",     2)
 infoRow(aboutCol,"Executor", SYS.executor,      3)
 infoRow(aboutCol,"Platform", SYS.platform,      4)
 infoRow(aboutCol,"Build",    os.date("%Y-%m-%d"),5)
+
+
+-- ============================================================
+-- MOBILE VIEWPORT FIT
+-- ============================================================
+if IS_MOBILE then
+    local function fitMobileWindow()
+        local vp = getViewport()
+        local mobileW = math.min(vp.X - 24, 860)
+        local mobileH = math.min(vp.Y - 32, 620)
+        win.Size = UDim2.new(0, mobileW, 0, mobileH)
+        win.Position = UDim2.new(0.5, -mobileW/2, 0.5, -mobileH/2)
+    end
+
+    local cam = workspace.CurrentCamera
+    if cam then
+        cam:GetPropertyChangedSignal("ViewportSize"):Connect(fitMobileWindow)
+    end
+end
 
 -- ============================================================
 -- INIT
