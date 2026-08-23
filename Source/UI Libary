@@ -1,1648 +1,941 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lithium UI — Component Library</title>
-  <style>
-    /* ============================================================
-       LITHIUM UI — DESIGN TOKENS
-       Creator: rightpapi
-    ============================================================ */
-    :root {
-      --li-bg:            #000000;
-      --li-surface:       #0a0a0a;
-      --li-surface-raise: #111111;
-      --li-border:        #ffffff;
-      --li-border-dim:    rgba(255,255,255,0.18);
-      --li-border-ghost:  rgba(255,255,255,0.07);
-      --li-text:          #ffffff;
-      --li-text-muted:    rgba(255,255,255,0.45);
-      --li-text-dim:      rgba(255,255,255,0.22);
-      --li-accent:        #ffffff;
-      --li-danger:        #ff4444;
-      --li-success:       #44ff88;
-      --li-warn:          #ffcc00;
-
-      --li-radius:        4px;
-      --li-radius-lg:     6px;
-      --li-gap:           12px;
-      --li-gap-lg:        20px;
-
-      --li-font:          'Share Tech Mono', 'Courier New', monospace;
-      --li-font-ui:       'Inter', 'Segoe UI', system-ui, sans-serif;
-
-      --li-transition:    160ms cubic-bezier(0.4, 0, 0.2, 1);
-      --li-glow:          0 0 12px rgba(255,255,255,0.12), 0 0 2px rgba(255,255,255,0.08);
-      --li-glow-strong:   0 0 20px rgba(255,255,255,0.22), 0 0 4px rgba(255,255,255,0.14);
-    }
-
-    /* ============================================================
-       RESET & BASE
-    ============================================================ */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--li-bg);
-      color: var(--li-text);
-      font-family: var(--li-font-ui);
-      font-size: 13px;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ============================================================
-       SCROLLBAR
-    ============================================================ */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--li-border-dim); border-radius: 2px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--li-border); }
-
-    /* ============================================================
-       WINDOW — the draggable script container
-    ============================================================ */
-    .li-window {
-      position: fixed;
-      background: var(--li-surface);
-      border: 1px solid var(--li-border);
-      border-radius: var(--li-radius-lg);
-      box-shadow: var(--li-glow), 0 24px 64px rgba(0,0,0,0.85);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-width: 280px;
-      user-select: none;
-    }
-
-    /* ============================================================
-       TITLEBAR
-    ============================================================ */
-    .li-titlebar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 14px;
-      height: 38px;
-      background: var(--li-surface-raise);
-      border-bottom: 1px solid var(--li-border-dim);
-      cursor: grab;
-      flex-shrink: 0;
-    }
-    .li-titlebar:active { cursor: grabbing; }
-
-    .li-title-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .li-logo-mark {
-      width: 18px;
-      height: 18px;
-      border: 1.5px solid var(--li-border);
-      border-radius: 3px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--li-font);
-      font-size: 9px;
-      letter-spacing: 0.5px;
-      color: var(--li-text);
-      line-height: 1;
-      flex-shrink: 0;
-    }
-
-    .li-title-text {
-      font-family: var(--li-font);
-      font-size: 11px;
-      letter-spacing: 1.5px;
-      color: var(--li-text);
-      text-transform: uppercase;
-    }
-
-    .li-title-tag {
-      font-family: var(--li-font);
-      font-size: 9px;
-      color: var(--li-text-muted);
-      letter-spacing: 0.5px;
-      margin-left: 2px;
-    }
-
-    .li-window-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .li-control-btn {
-      width: 22px;
-      height: 22px;
-      border: 1px solid var(--li-border-dim);
-      border-radius: 3px;
-      background: transparent;
-      color: var(--li-text-muted);
-      font-size: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: border-color var(--li-transition), color var(--li-transition), background var(--li-transition);
-      line-height: 1;
-    }
-    .li-control-btn:hover {
-      border-color: var(--li-border);
-      color: var(--li-text);
-      background: var(--li-border-ghost);
-    }
-    .li-control-btn.li-close:hover {
-      border-color: var(--li-danger);
-      color: var(--li-danger);
-    }
-
-    /* ============================================================
-       CONTENT AREA
-    ============================================================ */
-    .li-body {
-      padding: var(--li-gap) var(--li-gap-lg);
-      display: flex;
-      flex-direction: column;
-      gap: var(--li-gap);
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    /* ============================================================
-       SECTION LABEL
-    ============================================================ */
-    .li-section-label {
-      font-family: var(--li-font);
-      font-size: 9px;
-      letter-spacing: 2px;
-      color: var(--li-text-dim);
-      text-transform: uppercase;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--li-border-ghost);
-      margin-bottom: 2px;
-    }
-
-    /* ============================================================
-       BUTTONS
-    ============================================================ */
-    .li-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      height: 32px;
-      padding: 0 16px;
-      border-radius: var(--li-radius);
-      font-family: var(--li-font);
-      font-size: 10px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all var(--li-transition);
-      border: 1px solid transparent;
-      white-space: nowrap;
-    }
-
-    /* Primary */
-    .li-btn-primary {
-      background: var(--li-text);
-      color: var(--li-bg);
-      border-color: var(--li-text);
-    }
-    .li-btn-primary:hover {
-      background: transparent;
-      color: var(--li-text);
-      box-shadow: var(--li-glow-strong);
-    }
-
-    /* Outline */
-    .li-btn-outline {
-      background: transparent;
-      color: var(--li-text);
-      border-color: var(--li-border-dim);
-    }
-    .li-btn-outline:hover {
-      border-color: var(--li-border);
-      background: var(--li-border-ghost);
-      box-shadow: var(--li-glow);
-    }
-
-    /* Ghost */
-    .li-btn-ghost {
-      background: transparent;
-      color: var(--li-text-muted);
-      border-color: transparent;
-    }
-    .li-btn-ghost:hover {
-      color: var(--li-text);
-      background: var(--li-border-ghost);
-    }
-
-    /* Danger */
-    .li-btn-danger {
-      background: transparent;
-      color: var(--li-danger);
-      border-color: var(--li-danger);
-    }
-    .li-btn-danger:hover {
-      background: rgba(255,68,68,0.08);
-      box-shadow: 0 0 12px rgba(255,68,68,0.15);
-    }
-
-    /* Full width */
-    .li-btn-full { width: 100%; }
-
-    /* Small */
-    .li-btn-sm {
-      height: 26px;
-      padding: 0 10px;
-      font-size: 9px;
-    }
-
-    /* Active / pressed state */
-    .li-btn:active { transform: scale(0.97); }
-    .li-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    /* ============================================================
-       TOGGLE (ON/OFF SWITCH)
-    ============================================================ */
-    .li-toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .li-toggle-label {
-      font-size: 12px;
-      color: var(--li-text);
-      flex: 1;
-    }
-    .li-toggle-label small {
-      display: block;
-      font-size: 10px;
-      color: var(--li-text-muted);
-      margin-top: 1px;
-    }
-
-    .li-toggle {
-      position: relative;
-      width: 38px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-    .li-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .li-toggle-track {
-      position: absolute;
-      inset: 0;
-      border: 1px solid var(--li-border-dim);
-      border-radius: 10px;
-      background: transparent;
-      cursor: pointer;
-      transition: border-color var(--li-transition), box-shadow var(--li-transition);
-    }
-    .li-toggle-thumb {
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 12px;
-      height: 12px;
-      background: var(--li-text-muted);
-      border-radius: 50%;
-      transition: transform var(--li-transition), background var(--li-transition);
-    }
-    .li-toggle input:checked ~ .li-toggle-track {
-      border-color: var(--li-border);
-      box-shadow: var(--li-glow);
-    }
-    .li-toggle input:checked ~ .li-toggle-track .li-toggle-thumb {
-      transform: translateX(18px);
-      background: var(--li-text);
-    }
-
-    /* ============================================================
-       SLIDER
-    ============================================================ */
-    .li-slider-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .li-slider-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-    .li-slider-name {
-      font-size: 12px;
-      color: var(--li-text);
-    }
-    .li-slider-value {
-      font-family: var(--li-font);
-      font-size: 10px;
-      color: var(--li-text-muted);
-    }
-
-    .li-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 2px;
-      background: var(--li-border-dim);
-      border-radius: 1px;
-      outline: none;
-      cursor: pointer;
-    }
-    .li-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--li-text);
-      border: 2px solid var(--li-bg);
-      box-shadow: 0 0 0 1px var(--li-border);
-      cursor: pointer;
-      transition: box-shadow var(--li-transition);
-    }
-    .li-slider::-webkit-slider-thumb:hover {
-      box-shadow: 0 0 0 1px var(--li-border), var(--li-glow-strong);
-    }
-    .li-slider::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--li-text);
-      border: 2px solid var(--li-bg);
-      box-shadow: 0 0 0 1px var(--li-border);
-      cursor: pointer;
-    }
-
-    /* ============================================================
-       DROPDOWN SELECT
-    ============================================================ */
-    .li-select-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .li-select-label {
-      font-size: 11px;
-      color: var(--li-text-muted);
-      letter-spacing: 0.3px;
-    }
-    .li-select {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 100%;
-      height: 32px;
-      padding: 0 32px 0 12px;
-      background: var(--li-surface-raise);
-      border: 1px solid var(--li-border-dim);
-      border-radius: var(--li-radius);
-      color: var(--li-text);
-      font-family: var(--li-font-ui);
-      font-size: 12px;
-      cursor: pointer;
-      outline: none;
-      transition: border-color var(--li-transition), box-shadow var(--li-transition);
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 11px center;
-    }
-    .li-select:focus {
-      border-color: var(--li-border);
-      box-shadow: var(--li-glow);
-    }
-    .li-select option {
-      background: #111;
-      color: var(--li-text);
-    }
-
-    /* ============================================================
-       INPUT / TEXT FIELD
-    ============================================================ */
-    .li-input-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .li-input-label {
-      font-size: 11px;
-      color: var(--li-text-muted);
-      letter-spacing: 0.3px;
-    }
-    .li-input {
-      width: 100%;
-      height: 32px;
-      padding: 0 12px;
-      background: var(--li-surface-raise);
-      border: 1px solid var(--li-border-dim);
-      border-radius: var(--li-radius);
-      color: var(--li-text);
-      font-family: var(--li-font-ui);
-      font-size: 12px;
-      outline: none;
-      transition: border-color var(--li-transition), box-shadow var(--li-transition);
-    }
-    .li-input::placeholder { color: var(--li-text-dim); }
-    .li-input:focus {
-      border-color: var(--li-border);
-      box-shadow: var(--li-glow);
-    }
-
-    /* ============================================================
-       KEYBIND DISPLAY
-    ============================================================ */
-    .li-keybind-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .li-keybind-name {
-      font-size: 12px;
-      color: var(--li-text);
-    }
-    .li-keybind-keys {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-    .li-key {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 24px;
-      height: 22px;
-      padding: 0 6px;
-      border: 1px solid var(--li-border-dim);
-      border-radius: 3px;
-      font-family: var(--li-font);
-      font-size: 9px;
-      color: var(--li-text-muted);
-      background: var(--li-surface-raise);
-      letter-spacing: 0.3px;
-    }
-    .li-key-sep {
-      font-size: 9px;
-      color: var(--li-text-dim);
-    }
-
-    /* ============================================================
-       STATUS / BADGE
-    ============================================================ */
-    .li-status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .li-status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .li-status-dot.active  { background: var(--li-success); box-shadow: 0 0 6px var(--li-success); }
-    .li-status-dot.idle    { background: var(--li-text-dim); }
-    .li-status-dot.warn    { background: var(--li-warn); box-shadow: 0 0 6px var(--li-warn); }
-    .li-status-dot.error   { background: var(--li-danger); box-shadow: 0 0 6px var(--li-danger); }
-
-    .li-status-text {
-      font-size: 11px;
-      color: var(--li-text-muted);
-    }
-    .li-status-text strong {
-      color: var(--li-text);
-      font-weight: 600;
-    }
-
-    /* ============================================================
-       STAT PILL — numerical readout
-    ============================================================ */
-    .li-stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 8px;
-    }
-    .li-stat {
-      background: var(--li-surface-raise);
-      border: 1px solid var(--li-border-ghost);
-      border-radius: var(--li-radius);
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .li-stat-value {
-      font-family: var(--li-font);
-      font-size: 16px;
-      color: var(--li-text);
-      line-height: 1.1;
-    }
-    .li-stat-label {
-      font-size: 9px;
-      color: var(--li-text-dim);
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-    }
-
-    /* ============================================================
-       DIVIDER
-    ============================================================ */
-    .li-divider {
-      height: 1px;
-      background: var(--li-border-ghost);
-      margin: 2px 0;
-    }
-
-    /* ============================================================
-       NOTIFICATION / TOAST — "Lithium dose administered."
-    ============================================================ */
-    .li-toast-container {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 99999;
-      pointer-events: none;
-    }
-    .li-toast {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      background: var(--li-surface);
-      border: 1px solid var(--li-border);
-      border-radius: var(--li-radius);
-      box-shadow: var(--li-glow-strong), 0 8px 24px rgba(0,0,0,0.7);
-      font-family: var(--li-font);
-      font-size: 11px;
-      letter-spacing: 0.8px;
-      color: var(--li-text);
-      pointer-events: auto;
-      animation: li-toast-in 280ms cubic-bezier(0.2, 0, 0, 1) both;
-    }
-    .li-toast.li-toast-out {
-      animation: li-toast-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
-    }
-    .li-toast-icon {
-      font-size: 13px;
-      line-height: 1;
-    }
-    .li-toast.danger  { border-color: var(--li-danger); color: var(--li-danger); }
-    .li-toast.warn    { border-color: var(--li-warn);   color: var(--li-warn);   }
-    .li-toast.success { border-color: var(--li-success); color: var(--li-success); }
-
-    @keyframes li-toast-in {
-      from { opacity: 0; transform: translateY(10px) scale(0.96); }
-      to   { opacity: 1; transform: translateY(0)    scale(1);    }
-    }
-    @keyframes li-toast-out {
-      from { opacity: 1; transform: translateY(0)   scale(1);    }
-      to   { opacity: 0; transform: translateY(6px) scale(0.96); }
-    }
-
-    /* ============================================================
-       TAB BAR
-    ============================================================ */
-    .li-tabs {
-      display: flex;
-      border-bottom: 1px solid var(--li-border-ghost);
-      gap: 2px;
-    }
-    .li-tab {
-      padding: 6px 14px;
-      font-family: var(--li-font);
-      font-size: 9px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--li-text-muted);
-      cursor: pointer;
-      border-bottom: 1px solid transparent;
-      margin-bottom: -1px;
-      transition: color var(--li-transition), border-color var(--li-transition);
-      user-select: none;
-    }
-    .li-tab:hover { color: var(--li-text); }
-    .li-tab.active {
-      color: var(--li-text);
-      border-bottom-color: var(--li-border);
-    }
-    .li-tab-panel { display: none; padding-top: 12px; }
-    .li-tab-panel.active { display: flex; flex-direction: column; gap: var(--li-gap); }
-
-    /* ============================================================
-       PROGRESS BAR
-    ============================================================ */
-    .li-progress-wrap { display: flex; flex-direction: column; gap: 5px; }
-    .li-progress-header { display: flex; justify-content: space-between; }
-    .li-progress-name { font-size: 11px; color: var(--li-text-muted); }
-    .li-progress-pct  { font-family: var(--li-font); font-size: 10px; color: var(--li-text-dim); }
-    .li-progress-track {
-      width: 100%;
-      height: 2px;
-      background: var(--li-border-ghost);
-      border-radius: 1px;
-      overflow: hidden;
-    }
-    .li-progress-fill {
-      height: 100%;
-      background: var(--li-text);
-      border-radius: 1px;
-      transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: var(--li-glow);
-    }
-
-    /* ============================================================
-       DRAG-TO-MOVE LOGIC (JS)
-    ============================================================ */
-
-    /* ============================================================
-       DEMO PAGE LAYOUT
-    ============================================================ */
-    .demo-page {
-      min-height: 100vh;
-      background: #050505;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 60px 24px 80px;
-      gap: 48px;
-    }
-    .demo-header {
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    .demo-wordmark {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 6px;
-      color: rgba(255,255,255,0.3);
-      text-transform: uppercase;
-    }
-    .demo-title {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 36px;
-      letter-spacing: -1px;
-      color: #fff;
-      line-height: 1;
-    }
-    .demo-sub {
-      font-size: 12px;
-      color: rgba(255,255,255,0.35);
-      letter-spacing: 0.3px;
-    }
-    .demo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 24px;
-      width: 100%;
-      max-width: 1080px;
-    }
-    .demo-card {
-      background: #0a0a0a;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 6px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .demo-card-title {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.3);
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .demo-button-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .demo-live-window {
-      position: relative;
-      height: 300px;
-    }
-    .demo-live-window .li-window {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-    }
-    /* ============================================================
-       EXTENSION DEMO LAYOUT
-    ============================================================ */
-    .demo-ext-row {
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-    @media (max-width: 700px) {
-      .demo-ext-row { grid-template-columns: 1fr; }
-    }
-    .demo-ext-window {
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--li-radius-lg);
-      overflow: hidden;
-      min-height: 200px;
-    }
-    .demo-ext-docs {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .demo-ext-block {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .demo-ext-block-label {
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.25);
-      font-family: var(--li-font);
-    }
-    .demo-code {
-      background: #0d0d0d;
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 4px;
-      padding: 10px 14px;
-      font-family: var(--li-font);
-      font-size: 10px;
-      color: rgba(255,255,255,0.6);
-      line-height: 1.7;
-      white-space: pre;
-      overflow-x: auto;
-    }
-
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600&display=swap');
-  </style>
-</head>
-<body>
-
-<!-- ============================================================
-     TOAST CONTAINER (global, injected by LithiumUI.toast())
-============================================================ -->
-<div class="li-toast-container" id="li-toast-container"></div>
-
-<!-- ============================================================
-     DEMO PAGE
-============================================================ -->
-<div class="demo-page">
-
-  <div class="demo-header">
-    <div class="demo-wordmark">rightpapi</div>
-    <div class="demo-title">LITHIUM UI</div>
-    <div class="demo-sub">Component library · Black &amp; white · Script-ready</div>
-  </div>
-
-  <div class="demo-grid">
-
-    <!-- LIVE WINDOW PREVIEW -->
-    <div class="demo-card" style="grid-column: 1 / -1;">
-      <div class="demo-card-title">Live Window — Draggable</div>
-      <div style="position: relative; height: 340px; overflow: hidden; border-radius: 4px;">
-
-        <div class="li-window" id="demo-window" style="top:0;left:0;width:300px;">
-          <div class="li-titlebar" id="demo-titlebar">
-            <div class="li-title-left">
-              <div class="li-logo-mark">Li</div>
-              <span class="li-title-text">Lithium</span>
-              <span class="li-title-tag">Aimbot</span>
-            </div>
-            <div class="li-window-controls">
-              <button class="li-control-btn" title="Minimise">&#x2212;</button>
-              <button class="li-control-btn li-close" title="Close">&#x2715;</button>
-            </div>
-          </div>
-
-          <div class="li-body">
-            <!-- Status -->
-            <div class="li-status-row">
-              <div class="li-status-dot active"></div>
-              <div class="li-status-text"><strong>Active</strong> &mdash; injected &amp; running</div>
-            </div>
-
-            <div class="li-divider"></div>
-
-            <!-- Tabs -->
-            <div>
-              <div class="li-tabs">
-                <div class="li-tab active" data-tab="main">Main</div>
-                <div class="li-tab" data-tab="config">Config</div>
-                <div class="li-tab" data-tab="keys">Keys</div>
-              </div>
-              <div class="li-tab-panel active" id="tab-main">
-                <!-- Toggles -->
-                <div class="li-section-label">Features</div>
-                <label class="li-toggle-row">
-                  <div class="li-toggle-label">
-                    Silent Aim
-                    <small>Redirects projectiles server-side</small>
-                  </div>
-                  <div class="li-toggle">
-                    <input type="checkbox" checked />
-                    <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
-                  </div>
-                </label>
-                <label class="li-toggle-row">
-                  <div class="li-toggle-label">
-                    Prediction
-                    <small>Leads moving targets</small>
-                  </div>
-                  <div class="li-toggle">
-                    <input type="checkbox" />
-                    <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
-                  </div>
-                </label>
-
-                <div class="li-divider"></div>
-
-                <!-- Slider -->
-                <div class="li-slider-row">
-                  <div class="li-slider-header">
-                    <span class="li-slider-name">FOV Radius</span>
-                    <span class="li-slider-value" id="fov-val">80</span>
-                  </div>
-                  <input class="li-slider" type="range" min="10" max="200" value="80"
-                    oninput="document.getElementById('fov-val').textContent = this.value" />
-                </div>
-
-                <!-- Stats -->
-                <div class="li-section-label">Session</div>
-                <div class="li-stat-grid">
-                  <div class="li-stat">
-                    <div class="li-stat-value">247</div>
-                    <div class="li-stat-label">Locks</div>
-                  </div>
-                  <div class="li-stat">
-                    <div class="li-stat-value">91%</div>
-                    <div class="li-stat-label">Hit Rate</div>
-                  </div>
-                  <div class="li-stat">
-                    <div class="li-stat-value">4ms</div>
-                    <div class="li-stat-label">Latency</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="li-tab-panel" id="tab-config">
-                <div class="li-select-wrap">
-                  <span class="li-select-label">Target Priority</span>
-                  <select class="li-select">
-                    <option>Nearest to crosshair</option>
-                    <option>Lowest health</option>
-                    <option>Highest threat</option>
-                  </select>
-                </div>
-                <div class="li-input-wrap">
-                  <span class="li-input-label">Smoothness</span>
-                  <input class="li-input" type="text" placeholder="e.g. 0.35" value="0.35" />
-                </div>
-                <div class="li-slider-row">
-                  <div class="li-slider-header">
-                    <span class="li-slider-name">Max Angle</span>
-                    <span class="li-slider-value" id="angle-val">15°</span>
-                  </div>
-                  <input class="li-slider" type="range" min="1" max="90" value="15"
-                    oninput="document.getElementById('angle-val').textContent = this.value + '°'" />
-                </div>
-              </div>
-
-              <div class="li-tab-panel" id="tab-keys">
-                <div class="li-section-label">Keybinds</div>
-                <div class="li-keybind-row">
-                  <span class="li-keybind-name">Toggle Script</span>
-                  <div class="li-keybind-keys">
-                    <span class="li-key">INSERT</span>
-                  </div>
-                </div>
-                <div class="li-keybind-row">
-                  <span class="li-keybind-name">Silent Aim</span>
-                  <div class="li-keybind-keys">
-                    <span class="li-key">RMB</span>
-                  </div>
-                </div>
-                <div class="li-keybind-row">
-                  <span class="li-keybind-name">Panic Exit</span>
-                  <div class="li-keybind-keys">
-                    <span class="li-key">END</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="li-divider"></div>
-
-            <div class="li-progress-wrap">
-              <div class="li-progress-header">
-                <span class="li-progress-name">Memory integrity</span>
-                <span class="li-progress-pct">94%</span>
-              </div>
-              <div class="li-progress-track">
-                <div class="li-progress-fill" style="width: 94%;"></div>
-              </div>
-            </div>
-
-            <button class="li-btn li-btn-danger li-btn-full li-btn-sm"
-              onclick="LithiumUI.toast('Script detached.', 'danger')">
-              Detach Script
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- BUTTONS -->
-    <div class="demo-card">
-      <div class="demo-card-title">Buttons</div>
-      <div class="demo-button-row">
-        <button class="li-btn li-btn-primary" onclick="LithiumUI.toast('Lithium dose administered.', 'default')">Primary</button>
-        <button class="li-btn li-btn-outline">Outline</button>
-        <button class="li-btn li-btn-ghost">Ghost</button>
-        <button class="li-btn li-btn-danger">Danger</button>
-      </div>
-      <div class="demo-button-row">
-        <button class="li-btn li-btn-primary li-btn-sm">Small</button>
-        <button class="li-btn li-btn-outline li-btn-sm">Small</button>
-        <button class="li-btn li-btn-primary" disabled>Disabled</button>
-      </div>
-    </div>
-
-    <!-- CONTROLS -->
-    <div class="demo-card">
-      <div class="demo-card-title">Controls</div>
-      <label class="li-toggle-row">
-        <div class="li-toggle-label">Feature toggle<small>With subtitle</small></div>
-        <div class="li-toggle"><input type="checkbox" checked />
-          <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
-        </div>
-      </label>
-      <div class="li-slider-row">
-        <div class="li-slider-header">
-          <span class="li-slider-name">Speed</span>
-          <span class="li-slider-value" id="spd">50</span>
-        </div>
-        <input class="li-slider" type="range" min="0" max="100" value="50"
-          oninput="document.getElementById('spd').textContent=this.value" />
-      </div>
-      <div class="li-select-wrap">
-        <span class="li-select-label">Mode</span>
-        <select class="li-select">
-          <option>Auto</option><option>Manual</option><option>Burst</option>
-        </select>
-      </div>
-      <div class="li-input-wrap">
-        <span class="li-input-label">Value</span>
-        <input class="li-input" type="text" placeholder="Enter value…" />
-      </div>
-    </div>
-
-    <!-- STATUS & STATS -->
-    <div class="demo-card">
-      <div class="demo-card-title">Status &amp; Stats</div>
-      <div class="li-status-row"><div class="li-status-dot active"></div><div class="li-status-text"><strong>Active</strong> — running</div></div>
-      <div class="li-status-row"><div class="li-status-dot idle"></div><div class="li-status-text">Idle</div></div>
-      <div class="li-status-row"><div class="li-status-dot warn"></div><div class="li-status-text"><strong>Warning</strong> — detection risk</div></div>
-      <div class="li-status-row"><div class="li-status-dot error"></div><div class="li-status-text"><strong>Error</strong> — injection failed</div></div>
-      <div class="li-divider"></div>
-      <div class="li-stat-grid">
-        <div class="li-stat"><div class="li-stat-value">128</div><div class="li-stat-label">Calls</div></div>
-        <div class="li-stat"><div class="li-stat-value">3ms</div><div class="li-stat-label">Ping</div></div>
-        <div class="li-stat"><div class="li-stat-value">99%</div><div class="li-stat-label">Uptime</div></div>
-      </div>
-    </div>
-
-    <!-- TOASTS -->
-    <div class="demo-card">
-      <div class="demo-card-title">Notifications</div>
-      <div class="demo-button-row">
-        <button class="li-btn li-btn-outline li-btn-sm"
-          onclick="LithiumUI.toast('Lithium dose administered.')">
-          ⬜ Default
-        </button>
-        <button class="li-btn li-btn-outline li-btn-sm"
-          onclick="LithiumUI.toast('Injection successful.', 'success')">
-          ✅ Success
-        </button>
-        <button class="li-btn li-btn-outline li-btn-sm"
-          onclick="LithiumUI.toast('Detection risk elevated.', 'warn')">
-          ⚠️ Warn
-        </button>
-        <button class="li-btn li-btn-outline li-btn-sm"
-          onclick="LithiumUI.toast('Critical load failure.', 'danger')">
-          ❌ Error
-        </button>
-      </div>
-    </div>
-
-    <!-- KEYBINDS & PROGRESS -->
-    <div class="demo-card">
-      <div class="demo-card-title">Keybinds &amp; Progress</div>
-      <div class="li-keybind-row">
-        <span class="li-keybind-name">Open Menu</span>
-        <div class="li-keybind-keys"><span class="li-key">INSERT</span></div>
-      </div>
-      <div class="li-keybind-row">
-        <span class="li-keybind-name">Aim Lock</span>
-        <div class="li-keybind-keys"><span class="li-key">RMB</span></div>
-      </div>
-      <div class="li-keybind-row">
-        <span class="li-keybind-name">Panic</span>
-        <div class="li-keybind-keys">
-          <span class="li-key">CTRL</span>
-          <span class="li-key-sep">+</span>
-          <span class="li-key">ALT</span>
-          <span class="li-key-sep">+</span>
-          <span class="li-key">END</span>
-        </div>
-      </div>
-      <div class="li-divider"></div>
-      <div class="li-progress-wrap">
-        <div class="li-progress-header">
-          <span class="li-progress-name">Bypass integrity</span>
-          <span class="li-progress-pct">78%</span>
-        </div>
-        <div class="li-progress-track">
-          <div class="li-progress-fill" style="width: 78%;"></div>
-        </div>
-      </div>
-      <div class="li-progress-wrap">
-        <div class="li-progress-header">
-          <span class="li-progress-name">Memory scan</span>
-          <span class="li-progress-pct">42%</span>
-        </div>
-        <div class="li-progress-track">
-          <div class="li-progress-fill" style="width: 42%;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- EXTENSION DEMO — Window class + addTab + extensions -->
-    <div class="demo-card" style="grid-column: 1 / -1;">
-      <div class="demo-card-title">Window Class · addTab() · Extensions (.use)</div>
-      <div class="demo-ext-row">
-
-        <!-- Live window mount point -->
-        <div class="demo-ext-window" id="ext-demo-mount"></div>
-
-        <!-- API reference -->
-        <div class="demo-ext-docs">
-          <div class="demo-ext-block">
-            <div class="demo-ext-block-label">Create a window</div>
-            <pre class="demo-code">const win = new LithiumUI.Window({
-  title:    'Lithium YourGame',
-  subtitle: 'v1.0',
-  width:    300,
-});
-win.mount(); // appends to document.body</pre>
-          </div>
-          <div class="demo-ext-block">
-            <div class="demo-ext-block-label">Add tabs at any time</div>
-            <pre class="demo-code">win.addTab('main', 'Main', panel => {
-  // populate panel element
-  panel.innerHTML = `...`;
-});
-
-win.addTab('config', 'Config', panel => { ... });
-win.removeTab('config');
-win.activateTab('main');</pre>
-          </div>
-          <div class="demo-ext-block">
-            <div class="demo-ext-block-label">Register an extension</div>
-            <pre class="demo-code">LithiumUI.extend('myExt', (win) => ({
-  id:    'myext',
-  label: 'MyExt',
-  build(panel) {
-    // panel is a li-tab-panel div
-    panel.innerHTML = `...`;
-  },
-}));</pre>
-          </div>
-          <div class="demo-ext-block">
-            <div class="demo-ext-block-label">Mount extensions onto any window</div>
-            <pre class="demo-code">win.use('myExt');       // custom
-win.use('performance'); // built-in
-win.use('credits');     // built-in
-win.use('keybinds');    // built-in</pre>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-  </div><!-- /demo-grid -->
-</div><!-- /demo-page -->
-
-<script>
-  /* ============================================================
-     LITHIUM UI — JavaScript API
-     Creator: rightpapi
-  ============================================================ */
-  const LithiumUI = (() => {
-
-    /* ----------------------------------------------------------
-       TOAST SYSTEM
-    ---------------------------------------------------------- */
-    const TOAST_DURATION = 3200;
-    const toastContainer = document.getElementById('li-toast-container');
-
-    const ICONS = {
-      default: '◈',
-      success: '◉',
-      warn:    '◎',
-      danger:  '◌',
-    };
-
-    function toast(message, type = 'default', duration = TOAST_DURATION) {
-      const el = document.createElement('div');
-      el.className = `li-toast${type !== 'default' ? ' ' + type : ''}`;
-      el.innerHTML = `<span class="li-toast-icon">${ICONS[type] ?? ICONS.default}</span>${message}`;
-      toastContainer.appendChild(el);
-
-      const dismiss = () => {
-        el.classList.add('li-toast-out');
-        el.addEventListener('animationend', () => el.remove(), { once: true });
-      };
-
-      const timer = setTimeout(dismiss, duration);
-      el.addEventListener('click', () => { clearTimeout(timer); dismiss(); });
-    }
-
-    /* ----------------------------------------------------------
-       WINDOW DRAG
-    ---------------------------------------------------------- */
-    function makeDraggable(windowEl, handleEl) {
-      let dragging = false;
-      let ox = 0, oy = 0;
-
-      handleEl.addEventListener('mousedown', e => {
-        if (e.button !== 0) return;
-        dragging = true;
-        const rect = windowEl.getBoundingClientRect();
-        ox = e.clientX - rect.left;
-        oy = e.clientY - rect.top;
-        windowEl.style.position = 'fixed';
-        e.preventDefault();
-      });
-
-      document.addEventListener('mousemove', e => {
-        if (!dragging) return;
-        const parent = windowEl.parentElement?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
-        let x = e.clientX - ox - parent.left;
-        let y = e.clientY - oy - parent.top;
-        x = Math.max(0, Math.min(x, parent.width  - windowEl.offsetWidth));
-        y = Math.max(0, Math.min(y, parent.height - windowEl.offsetHeight));
-        windowEl.style.left = x + 'px';
-        windowEl.style.top  = y + 'px';
-      });
-
-      document.addEventListener('mouseup', () => { dragging = false; });
-    }
-
-    /* ----------------------------------------------------------
-       STATIC TAB INIT — wires existing HTML tab markup
-    ---------------------------------------------------------- */
-    function initTabs(containerEl) {
-      const tabs   = containerEl.querySelectorAll(':scope .li-tabs > .li-tab');
-      const panels = containerEl.querySelectorAll(':scope .li-tab-panel');
-
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          tabs.forEach(t => t.classList.remove('active'));
-          panels.forEach(p => p.classList.remove('active'));
-          tab.classList.add('active');
-          const target = containerEl.querySelector(`#tab-${tab.dataset.tab}`);
-          if (target) target.classList.add('active');
-        });
-      });
-    }
-
-    /* ----------------------------------------------------------
-       EXTENSION REGISTRY
-       LithiumUI.extend(name, fn) — register a named extension.
-       fn receives the Window instance and returns an object:
-         { label, id, build(panelEl) }
-       The window's .use(name) method mounts it as a new tab.
-    ---------------------------------------------------------- */
-    const _extensions = {};
-
-    function extend(name, fn) {
-      if (_extensions[name]) {
-        console.warn(`[Lithium] Extension "${name}" is already registered. Skipping.`);
-        return;
-      }
-      _extensions[name] = fn;
-    }
-
-    function _getExtension(name) {
-      return _extensions[name] ?? null;
-    }
-
-    /* ----------------------------------------------------------
-       WINDOW CLASS
-       Wraps a li-window DOM element and exposes:
-         .addTab(id, label, builderFn)  — add a tab at any time
-         .removeTab(id)                 — remove a tab by id
-         .activateTab(id)               — switch to a tab
-         .use(extensionName)            — mount a registered extension
-         .mount(parentEl)               — append to DOM
-         .destroy()                     — remove from DOM
-    ---------------------------------------------------------- */
-    class Window {
-      constructor(options = {}) {
-        const {
-          title    = 'Lithium',
-          subtitle = '',
-          width    = 300,
-          top      = 40,
-          left     = 40,
-        } = options;
-
-        this._tabs   = new Map(); // id → { tabEl, panelEl }
-        this._uid    = `liw-${Math.random().toString(36).slice(2, 8)}`;
-
-        /* Root element */
-        this.el = document.createElement('div');
-        this.el.className = 'li-window';
-        this.el.style.cssText = `top:${top}px;left:${left}px;width:${width}px;position:fixed;`;
-
-        /* Titlebar */
-        this._titlebar = document.createElement('div');
-        this._titlebar.className = 'li-titlebar';
-        this._titlebar.innerHTML = `
-          <div class="li-title-left">
-            <div class="li-logo-mark">Li</div>
-            <span class="li-title-text">${title}</span>
-            ${subtitle ? `<span class="li-title-tag">${subtitle}</span>` : ''}
-          </div>
-          <div class="li-window-controls">
-            <button class="li-control-btn li-close" title="Close">&#x2715;</button>
-          </div>`;
-
-        /* Tab bar (starts hidden; shown once first tab is added) */
-        this._tabBar = document.createElement('div');
-        this._tabBar.className = 'li-tabs';
-        this._tabBar.style.display = 'none';
-
-        /* Body wrapper — holds tab bar + panels */
-        this._body = document.createElement('div');
-        this._body.className = 'li-body';
-        this._body.appendChild(this._tabBar);
-
-        this.el.appendChild(this._titlebar);
-        this.el.appendChild(this._body);
-
-        /* Wire close button */
-        this._titlebar.querySelector('.li-close')
-          .addEventListener('click', () => this.destroy());
-
-        /* Wire drag */
-        makeDraggable(this.el, this._titlebar);
-      }
-
-      /* Add a tab. builderFn(panelEl) — populate the panel element. */
-      addTab(id, label, builderFn) {
-        if (this._tabs.has(id)) {
-          console.warn(`[Lithium] Tab "${id}" already exists on this window.`);
-          return this;
-        }
-
-        /* Tab button */
-        const tabEl = document.createElement('div');
-        tabEl.className = 'li-tab';
-        tabEl.dataset.tab = id;
-        tabEl.textContent = label;
-        tabEl.addEventListener('click', () => this.activateTab(id));
-        this._tabBar.appendChild(tabEl);
-
-        /* Panel */
-        const panelEl = document.createElement('div');
-        panelEl.className = 'li-tab-panel';
-        panelEl.id = `tab-${this._uid}-${id}`;
-        this._body.appendChild(panelEl);
-
-        this._tabs.set(id, { tabEl, panelEl });
-
-        /* Run builder */
-        builderFn(panelEl);
-
-        /* Show tab bar now that we have at least one tab */
-        this._tabBar.style.display = '';
-
-        /* Auto-activate if it's the first tab */
-        if (this._tabs.size === 1) this.activateTab(id);
-
-        return this;
-      }
-
-      /* Remove a tab by id. Activates the previous tab if it was active. */
-      removeTab(id) {
-        const entry = this._tabs.get(id);
-        if (!entry) return this;
-
-        const wasActive = entry.tabEl.classList.contains('active');
-        entry.tabEl.remove();
-        entry.panelEl.remove();
-        this._tabs.delete(id);
-
-        if (this._tabs.size === 0) {
-          this._tabBar.style.display = 'none';
-        } else if (wasActive) {
-          this.activateTab(this._tabs.keys().next().value);
-        }
-
-        return this;
-      }
-
-      /* Switch the active tab. */
-      activateTab(id) {
-        this._tabs.forEach(({ tabEl, panelEl }, key) => {
-          const active = key === id;
-          tabEl.classList.toggle('active', active);
-          panelEl.classList.toggle('active', active);
-        });
-        return this;
-      }
-
-      /* Mount a registered extension as a new tab. */
-      use(extensionName) {
-        const factory = _getExtension(extensionName);
-        if (!factory) {
-          console.error(`[Lithium] Extension "${extensionName}" is not registered.`);
-          return this;
-        }
-        const ext = factory(this);
-        if (!ext?.id || !ext?.label || typeof ext?.build !== 'function') {
-          console.error(`[Lithium] Extension "${extensionName}" must return { id, label, build }.`);
-          return this;
-        }
-        this.addTab(ext.id, ext.label, ext.build.bind(ext));
-        return this;
-      }
-
-      /* Append the window to a parent element (defaults to document.body). */
-      mount(parentEl = document.body) {
-        parentEl.appendChild(this.el);
-        return this;
-      }
-
-      /* Remove from DOM. */
-      destroy() {
-        this.el.remove();
-      }
-    }
-
-    /* ----------------------------------------------------------
-       LEGACY createWindow — kept for backward compatibility.
-       Returns { win, body } as before.
-    ---------------------------------------------------------- */
-    function createWindow(options = {}) {
-      const instance = new Window(options);
-      return { win: instance.el, body: instance._body, instance };
-    }
-
-    /* ----------------------------------------------------------
-       PUBLIC API
-    ---------------------------------------------------------- */
-    return { toast, makeDraggable, initTabs, extend, Window, createWindow };
-  })();
-
-  /* ============================================================
-     BUILT-IN EXTENSIONS
-     Bundled with the library. Scripts call .use('name') to mount.
-  ============================================================ */
-
-  /* --- Credits extension ------------------------------------ */
-  LithiumUI.extend('credits', () => ({
-    id:    'credits',
-    label: 'Credits',
-    build(panelEl) {
-      panelEl.innerHTML = `
-        <div class="li-section-label">Script</div>
-        <div class="li-status-row" style="justify-content:space-between;">
-          <span style="font-size:11px;color:var(--li-text-muted);">Creator</span>
-          <span style="font-family:var(--li-font);font-size:11px;color:var(--li-text);">rightpapi</span>
-        </div>
-        <div class="li-status-row" style="justify-content:space-between;">
-          <span style="font-size:11px;color:var(--li-text-muted);">Library</span>
-          <span style="font-family:var(--li-font);font-size:11px;color:var(--li-text);">Lithium UI</span>
-        </div>
-        <div class="li-divider"></div>
-        <div class="li-section-label">Version</div>
-        <div class="li-status-row" style="justify-content:space-between;">
-          <span style="font-size:11px;color:var(--li-text-muted);">Build</span>
-          <span style="font-family:var(--li-font);font-size:11px;color:var(--li-text-muted);" id="li-credits-ver">—</span>
-        </div>`;
-      /* Stamp build date at mount time */
-      panelEl.querySelector('#li-credits-ver').textContent =
-        new Date().toISOString().slice(0, 10);
-    },
-  }));
-
-  /* --- Keybinds extension ---------------------------------- */
-  LithiumUI.extend('keybinds', (win) => ({
-    id:    'keys',
-    label: 'Keys',
-    _binds: [],
-    addBind(name, keys) { this._binds.push({ name, keys }); return this; },
-    build(panelEl) {
-      if (this._binds.length === 0) {
-        panelEl.innerHTML = `<div style="font-size:11px;color:var(--li-text-dim);padding:4px 0;">No keybinds registered.</div>`;
-        return;
-      }
-      this._binds.forEach(({ name, keys }) => {
-        const row = document.createElement('div');
-        row.className = 'li-keybind-row';
-        const keyPills = keys.map(k => `<span class="li-key">${k}</span>`).join('<span class="li-key-sep">+</span>');
-        row.innerHTML = `<span class="li-keybind-name">${name}</span><div class="li-keybind-keys">${keyPills}</div>`;
-        panelEl.appendChild(row);
-      });
-    },
-  }));
-
-  /* --- Performance extension ------------------------------- */
-  LithiumUI.extend('performance', () => ({
-    id:    'perf',
-    label: 'Perf',
-    _statEls: {},
-    build(panelEl) {
-      panelEl.innerHTML = `
-        <div class="li-section-label">Runtime</div>
-        <div class="li-stat-grid">
-          <div class="li-stat"><div class="li-stat-value" id="li-perf-fps">—</div><div class="li-stat-label">FPS</div></div>
-          <div class="li-stat"><div class="li-stat-value" id="li-perf-mem">—</div><div class="li-stat-label">Heap MB</div></div>
-          <div class="li-stat"><div class="li-stat-value" id="li-perf-up">0s</div><div class="li-stat-label">Uptime</div></div>
-        </div>
-        <div class="li-divider"></div>
-        <div class="li-section-label">Frame budget</div>
-        <div class="li-progress-wrap">
-          <div class="li-progress-header">
-            <span class="li-progress-name">Frame time</span>
-            <span class="li-progress-pct" id="li-perf-ft">—</span>
-          </div>
-          <div class="li-progress-track"><div class="li-progress-fill" id="li-perf-bar" style="width:0%"></div></div>
-        </div>`;
-
-      const fpsEl  = panelEl.querySelector('#li-perf-fps');
-      const memEl  = panelEl.querySelector('#li-perf-mem');
-      const upEl   = panelEl.querySelector('#li-perf-up');
-      const ftEl   = panelEl.querySelector('#li-perf-ft');
-      const barEl  = panelEl.querySelector('#li-perf-bar');
-
-      let frames = 0, lastFpsTime = performance.now(), lastFrame = performance.now();
-      const startTime = performance.now();
-
-      const tick = (now) => {
-        if (!panelEl.isConnected) return; // stop polling when removed
-
-        const delta = now - lastFrame;
-        lastFrame   = now;
-        frames++;
-
-        if (now - lastFpsTime >= 1000) {
-          const fps = Math.round(frames * 1000 / (now - lastFpsTime));
-          fpsEl.textContent = fps;
-          frames = 0;
-          lastFpsTime = now;
-        }
-
-        /* Heap — only available in Chromium */
-        if (performance.memory) {
-          memEl.textContent = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
-        }
-
-        /* Uptime */
-        const secs = Math.floor((now - startTime) / 1000);
-        upEl.textContent = secs < 60 ? `${secs}s` : `${Math.floor(secs/60)}m${secs%60}s`;
-
-        /* Frame budget — target 16.67ms (60fps) */
-        const pct = Math.min(100, Math.round(delta / 16.67 * 100));
-        ftEl.textContent = `${delta.toFixed(1)}ms`;
-        barEl.style.width = `${pct}%`;
-        barEl.style.background = pct > 90 ? 'var(--li-danger)' : pct > 60 ? 'var(--li-warn)' : 'var(--li-text)';
-
-        requestAnimationFrame(tick);
-      };
-
-      requestAnimationFrame(tick);
-    },
-  }));
-
-  /* ============================================================
-     WIRE DEMO COMPONENTS
-  ============================================================ */
-  (() => {
-    /* Static HTML demo window (drag + tabs) */
-    const demoWin    = document.getElementById('demo-window');
-    const demoHandle = document.getElementById('demo-titlebar');
-    if (demoWin && demoHandle) LithiumUI.makeDraggable(demoWin, demoHandle);
-    document.querySelectorAll('.li-window').forEach(c => LithiumUI.initTabs(c));
-
-    /* ----------------------------------------------------------
-       LIVE DEMO — Window class + extensions
-       Spawned into the "Extension Demo" card.
-    ---------------------------------------------------------- */
-    const demoParent = document.getElementById('ext-demo-mount');
-    if (demoParent) {
-      const win = new LithiumUI.Window({
-        title: 'Lithium', subtitle: 'Demo', width: 300, top: 0, left: 0,
-      });
-
-      /* Override position for inline card demo */
-      win.el.style.position = 'relative';
-      win.el.style.top  = '0';
-      win.el.style.left = '0';
-      win.el.style.width = '100%';
-
-      /* Script tab — built inline via addTab */
-      win.addTab('main', 'Main', panel => {
-        panel.innerHTML = `
-          <div class="li-section-label">Features</div>
-          <label class="li-toggle-row">
-            <div class="li-toggle-label">Silent Aim<small>Server-side redirect</small></div>
-            <div class="li-toggle"><input type="checkbox" checked />
-              <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
-            </div>
-          </label>
-          <label class="li-toggle-row">
-            <div class="li-toggle-label">Prediction<small>Lead moving targets</small></div>
-            <div class="li-toggle"><input type="checkbox" />
-              <div class="li-toggle-track"><div class="li-toggle-thumb"></div></div>
-            </div>
-          </label>
-          <div class="li-divider"></div>
-          <div class="li-slider-row">
-            <div class="li-slider-header">
-              <span class="li-slider-name">FOV</span>
-              <span class="li-slider-value" id="ext-fov-val">80</span>
-            </div>
-            <input class="li-slider" type="range" min="10" max="200" value="80"
-              oninput="document.getElementById('ext-fov-val').textContent=this.value" />
-          </div>`;
-      });
-
-      /* Mount built-in extensions */
-      win.use('performance');
-      win.use('credits');
-
-      /* Custom extension defined inline for this demo */
-      LithiumUI.extend('demo-log', () => ({
-        id: 'log', label: 'Log',
-        build(panel) {
-          panel.innerHTML = `
-            <div class="li-section-label">Event Log</div>
-            <div id="li-demo-log" style="
-              font-family:var(--li-font);font-size:10px;color:var(--li-text-muted);
-              display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;">
-            </div>
-            <button class="li-btn li-btn-outline li-btn-sm li-btn-full" id="li-log-fire">Fire Event</button>`;
-
-          const logEl = panel.querySelector('#li-demo-log');
-          const addLog = (msg, type = 'info') => {
-            const colors = { info: 'var(--li-text-muted)', ok: 'var(--li-success)', err: 'var(--li-danger)', warn: 'var(--li-warn)' };
-            const line = document.createElement('div');
-            line.style.color = colors[type] ?? colors.info;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            logEl.prepend(line);
-            if (logEl.children.length > 20) logEl.lastElementChild.remove();
-          };
-          addLog('Log extension mounted.', 'ok');
-          panel.querySelector('#li-log-fire').addEventListener('click', () => {
-            const msgs = ['Target acquired', 'Prediction recalculated', 'FOV updated', 'Frame dropped', 'Memory GC triggered'];
-            const types = ['info', 'ok', 'warn', 'err'];
-            addLog(msgs[Math.floor(Math.random() * msgs.length)], types[Math.floor(Math.random() * types.length)]);
-          });
-        },
-      }));
-      win.use('demo-log');
-
-      win.mount(demoParent);
-    }
-
-    /* Fire load toast */
-    setTimeout(() => LithiumUI.toast('Lithium dose administered.'), 600);
-  })();
-</script>
-</body>
-</html>
+-- Lithium UI · Hub (System Info + Mobile)
+-- Creator: rightpapi
+
+local Players          = game:GetService("Players")
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService       = game:GetService("RunService")
+local LocalPlayer      = Players.LocalPlayer
+
+-- ============================================================
+-- MOBILE DETECTION
+-- ============================================================
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- ============================================================
+-- TOKENS
+-- ============================================================
+local T = {
+    bg           = Color3.fromRGB(6,   6,   6),
+    surface      = Color3.fromRGB(14,  14,  14),
+    surfaceRaise = Color3.fromRGB(22,  22,  22),
+    surfaceHover = Color3.fromRGB(30,  30,  30),
+    border       = Color3.fromRGB(255, 255, 255),
+    borderDim    = Color3.fromRGB(55,  55,  55),
+    borderGhost  = Color3.fromRGB(30,  30,  30),
+    text         = Color3.fromRGB(255, 255, 255),
+    textMuted    = Color3.fromRGB(100, 100, 100),
+    textDim      = Color3.fromRGB(50,  50,  50),
+    success      = Color3.fromRGB(68,  255, 136),
+    warn         = Color3.fromRGB(255, 204, 0),
+    danger       = Color3.fromRGB(255, 68,  68),
+}
+
+local MONO = Enum.Font.Code
+local UI   = Enum.Font.Gotham
+local BOLD = Enum.Font.GothamBold
+
+-- Scale UI for mobile — larger touch targets
+local SCALE = IS_MOBILE and 1.25 or 1.0
+local function sc(n) return math.floor(n * SCALE) end
+
+-- ============================================================
+-- HELPERS
+-- ============================================================
+local function corner(p, r)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, r or 6)
+    c.Parent = p; return c
+end
+
+local function stroke(p, col, thick)
+    local s = Instance.new("UIStroke")
+    s.Color = col or T.border; s.Thickness = thick or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = p; return s
+end
+
+local function pad(p, t, r, b, l)
+    local u = Instance.new("UIPadding")
+    u.PaddingTop    = UDim.new(0, t or 8)
+    u.PaddingRight  = UDim.new(0, r or 12)
+    u.PaddingBottom = UDim.new(0, b or 8)
+    u.PaddingLeft   = UDim.new(0, l or 12)
+    u.Parent = p; return u
+end
+
+local function vlist(p, spacing)
+    local l = Instance.new("UIListLayout")
+    l.FillDirection = Enum.FillDirection.Vertical
+    l.SortOrder     = Enum.SortOrder.LayoutOrder
+    l.Padding       = UDim.new(0, spacing or 0)
+    l.Parent = p; return l
+end
+
+local function hlist(p, spacing)
+    local l = Instance.new("UIListLayout")
+    l.FillDirection = Enum.FillDirection.Horizontal
+    l.SortOrder     = Enum.SortOrder.LayoutOrder
+    l.Padding       = UDim.new(0, spacing or 0)
+    l.Parent = p; return l
+end
+
+local function fr(p, size, pos, bg, trans)
+    local f = Instance.new("Frame")
+    f.Size                   = size
+    f.Position               = pos or UDim2.new(0,0,0,0)
+    f.BackgroundColor3       = bg or T.surface
+    f.BackgroundTransparency = trans or 0
+    f.BorderSizePixel        = 0
+    f.Parent                 = p; return f
+end
+
+local function tw(obj, props, t)
+    if not obj or not obj.Parent then return end
+    TweenService:Create(obj, TweenInfo.new(t or 0.15, Enum.EasingStyle.Quad), props):Play()
+end
+
+local function divLine(p, order)
+    local f = fr(p, UDim2.new(1,0,0,1), nil, T.borderGhost)
+    f.LayoutOrder = order or 99; return f
+end
+
+local function secLabel(p, txt, order)
+    local l = Instance.new("TextLabel")
+    l.Text = string.upper(txt); l.TextSize = sc(9); l.Font = MONO
+    l.TextColor3 = T.textDim; l.BackgroundTransparency = 1
+    l.Size = UDim2.new(1,0,0,sc(14))
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.LayoutOrder = order or 0; l.Parent = p; return l
+end
+
+local function mkScroll(p, size, pos)
+    local s = Instance.new("ScrollingFrame")
+    s.Size = size; s.Position = pos or UDim2.new(0,0,0,0)
+    s.BackgroundTransparency = 1; s.BorderSizePixel = 0
+    s.ScrollBarThickness = IS_MOBILE and 3 or 2
+    s.ScrollBarImageColor3 = T.borderDim
+    s.CanvasSize = UDim2.new(0,0,0,0)
+    s.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    s.ScrollingDirection = Enum.ScrollingDirection.Y
+    s.Parent = p; return s
+end
+
+-- ============================================================
+-- DRAG — supports both mouse and touch
+-- ============================================================
+local function makeDraggable(win, handle)
+    local drag, ds, sp = false, nil, nil
+
+    local function onStart(pos)
+        drag = true; ds = pos; sp = win.Position
+    end
+    local function onMove(pos)
+        if not drag then return end
+        local d = pos - ds
+        win.Position = UDim2.new(sp.X.Scale, sp.X.Offset+d.X, sp.Y.Scale, sp.Y.Offset+d.Y)
+    end
+    local function onEnd()
+        drag = false
+    end
+
+    handle.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+        or i.UserInputType == Enum.UserInputType.Touch then
+            onStart(i.Position)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseMovement
+        or i.UserInputType == Enum.UserInputType.Touch then
+            onMove(i.Position)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+        or i.UserInputType == Enum.UserInputType.Touch then
+            onEnd()
+        end
+    end)
+end
+
+-- ============================================================
+-- TOAST
+-- ============================================================
+local _toast
+local function initToast(gui)
+    local stack = fr(gui, UDim2.new(0,sc(260),1,-40), UDim2.new(1,-sc(272),0,0), nil, 1)
+    local layout = vlist(stack, 6)
+    layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    pad(stack,0,0,20,0)
+
+    local icons = {default="◈",success="◉",warn="◎",danger="◌"}
+    local cols  = {default=T.border,success=T.success,warn=T.warn,danger=T.danger}
+
+    _toast = function(msg, kind)
+        kind = kind or "default"
+        local t = fr(stack, UDim2.new(1,0,0,sc(36)), nil, T.surface)
+        corner(t,4); stroke(t, cols[kind] or T.border, 1)
+        t.BackgroundTransparency = 1
+
+        local row = fr(t, UDim2.new(1,0,1,0), nil, nil, 1)
+        hlist(row,8); pad(row,0,12,0,12)
+
+        local ic = Instance.new("TextLabel")
+        ic.Text = icons[kind] or "◈"; ic.TextSize = sc(12); ic.Font = MONO
+        ic.TextColor3 = cols[kind] or T.border; ic.BackgroundTransparency = 1
+        ic.Size = UDim2.new(0,sc(12),1,0); ic.TextYAlignment = Enum.TextYAlignment.Center
+        ic.Parent = row
+
+        local ml = Instance.new("TextLabel")
+        ml.Text = msg; ml.TextSize = sc(11); ml.Font = MONO
+        ml.TextColor3 = cols[kind] or T.border; ml.BackgroundTransparency = 1
+        ml.Size = UDim2.new(1,-sc(20),1,0)
+        ml.TextXAlignment = Enum.TextXAlignment.Left
+        ml.TextYAlignment = Enum.TextYAlignment.Center; ml.Parent = row
+
+        tw(t,{BackgroundTransparency=0},0.2)
+        task.delay(3.2,function()
+            tw(t,{BackgroundTransparency=1},0.2)
+            task.delay(0.25,function() t:Destroy() end)
+        end)
+    end
+end
+
+-- ============================================================
+-- TOGGLE — touch-friendly hit area
+-- ============================================================
+local function mkToggle(p, name, sub, default, order, cb)
+    local rowH = sub and sc(42) or sc(30)
+    local row = fr(p, UDim2.new(1,0,0,rowH), nil, nil, 1)
+    row.LayoutOrder = order or 0
+
+    local texts = fr(row, UDim2.new(1,-sc(52),1,0), nil, nil, 1)
+    vlist(texts,2); pad(texts, sub and sc(6) or sc(8), 0, sub and sc(6) or sc(8), 0)
+
+    local ml = Instance.new("TextLabel")
+    ml.Text=name; ml.TextSize=sc(12); ml.Font=UI; ml.TextColor3=T.text
+    ml.BackgroundTransparency=1; ml.Size=UDim2.new(1,0,0,sc(15))
+    ml.TextXAlignment=Enum.TextXAlignment.Left; ml.Parent=texts
+
+    if sub then
+        local sl=Instance.new("TextLabel")
+        sl.Text=sub; sl.TextSize=sc(10); sl.Font=UI; sl.TextColor3=T.textMuted
+        sl.BackgroundTransparency=1; sl.Size=UDim2.new(1,0,0,sc(13))
+        sl.TextXAlignment=Enum.TextXAlignment.Left; sl.Parent=texts
+    end
+
+    local track = fr(row, UDim2.new(0,sc(38),0,sc(20)), UDim2.new(1,-sc(38),0.5,-sc(10)), T.bg)
+    corner(track,sc(10))
+    local ts = stroke(track, default and T.border or T.borderDim, 1)
+    local thumb = fr(track, UDim2.new(0,sc(12),0,sc(12)),
+        default and UDim2.new(1,-sc(15),0.5,-sc(6)) or UDim2.new(0,sc(3),0.5,-sc(6)),
+        default and T.text or T.textMuted)
+    corner(thumb,sc(6))
+
+    local state = default or false
+    local btn = Instance.new("TextButton")
+    btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1; btn.Text=""
+    btn.Parent=row
+    btn.MouseButton1Click:Connect(function()
+        state=not state
+        tw(thumb,{
+            Position=state and UDim2.new(1,-sc(15),0.5,-sc(6)) or UDim2.new(0,sc(3),0.5,-sc(6)),
+            BackgroundColor3=state and T.text or T.textMuted
+        },0.15)
+        tw(ts,{Color=state and T.border or T.borderDim},0.15)
+        if cb then cb(state) end
+    end)
+    return row
+end
+
+-- ============================================================
+-- SLIDER — touch-aware
+-- ============================================================
+local function mkSlider(p, name, min, max, default, order, cb)
+    local c = fr(p, UDim2.new(1,0,0,sc(44)), nil, nil, 1)
+    c.LayoutOrder = order or 0
+
+    local hdr = fr(c, UDim2.new(1,0,0,sc(16)), nil, nil, 1)
+    local nl=Instance.new("TextLabel")
+    nl.Text=name; nl.TextSize=sc(12); nl.Font=UI; nl.TextColor3=T.text
+    nl.BackgroundTransparency=1; nl.Size=UDim2.new(0.7,0,1,0)
+    nl.TextXAlignment=Enum.TextXAlignment.Left; nl.Parent=hdr
+
+    local vl=Instance.new("TextLabel")
+    vl.Text=tostring(default); vl.TextSize=sc(10); vl.Font=MONO; vl.TextColor3=T.textMuted
+    vl.BackgroundTransparency=1; vl.Size=UDim2.new(0.3,0,1,0)
+    vl.Position=UDim2.new(0.7,0,0,0); vl.TextXAlignment=Enum.TextXAlignment.Right; vl.Parent=hdr
+
+    local track=fr(c,UDim2.new(1,0,0,2),UDim2.new(0,0,0,sc(28)),T.borderGhost); corner(track,1)
+    local p0=(default-min)/(max-min)
+    local fill=fr(track,UDim2.new(p0,0,1,0),nil,T.text); corner(fill,1)
+    local th=fr(track,UDim2.new(0,sc(14),0,sc(14)),UDim2.new(p0,0,0.5,0),T.text)
+    th.AnchorPoint=Vector2.new(0.5,0.5); th.ZIndex=3; corner(th,sc(7)); stroke(th,T.bg,2)
+
+    local dragging=false
+    -- Larger hit area for touch
+    local hitH = IS_MOBILE and sc(32) or sc(20)
+    local hit=Instance.new("TextButton")
+    hit.Size=UDim2.new(1,0,0,hitH); hit.Position=UDim2.new(0,0,0,sc(16))
+    hit.BackgroundTransparency=1; hit.Text=""; hit.ZIndex=5; hit.Parent=c
+
+    local function upd(x)
+        local sz=track.AbsoluteSize.X; if sz==0 then return end
+        local pct=math.clamp((x-track.AbsolutePosition.X)/sz,0,1)
+        local v=math.floor(min+pct*(max-min))
+        vl.Text=tostring(v)
+        tw(fill,{Size=UDim2.new(pct,0,1,0)},0.05)
+        tw(th,{Position=UDim2.new(pct,0,0.5,0)},0.05)
+        if cb then cb(v) end
+    end
+
+    hit.InputBegan:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.MouseButton1
+        or i.UserInputType==Enum.UserInputType.Touch then
+            dragging=true; upd(i.Position.X)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement
+        or i.UserInputType==Enum.UserInputType.Touch) then
+            upd(i.Position.X)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.MouseButton1
+        or i.UserInputType==Enum.UserInputType.Touch then
+            dragging=false
+        end
+    end)
+    return c
+end
+
+-- ============================================================
+-- KEYBIND ROW
+-- ============================================================
+local function mkKeybind(p, name, keys, order)
+    local row=fr(p,UDim2.new(1,0,0,sc(26)),nil,nil,1); row.LayoutOrder=order or 0
+    local nl=Instance.new("TextLabel")
+    nl.Text=name; nl.TextSize=sc(12); nl.Font=UI; nl.TextColor3=T.text
+    nl.BackgroundTransparency=1; nl.Size=UDim2.new(0.5,0,1,0)
+    nl.TextXAlignment=Enum.TextXAlignment.Left; nl.TextYAlignment=Enum.TextYAlignment.Center
+    nl.Parent=row
+
+    local kr=fr(row,UDim2.new(0.5,0,1,0),UDim2.new(0.5,0,0,0),nil,1)
+    local kl=hlist(kr,3)
+    kl.HorizontalAlignment=Enum.HorizontalAlignment.Right
+    kl.VerticalAlignment=Enum.VerticalAlignment.Center
+
+    for i,k in ipairs(keys) do
+        local pill=fr(kr,UDim2.new(0,0,0,sc(20)),nil,T.surfaceRaise)
+        pill.AutomaticSize=Enum.AutomaticSize.X; pill.LayoutOrder=i*2-1
+        corner(pill,3); stroke(pill,T.borderDim,1)
+        local kt=Instance.new("TextLabel")
+        kt.Text=k; kt.TextSize=sc(9); kt.Font=MONO; kt.TextColor3=T.textMuted
+        kt.BackgroundTransparency=1; kt.Size=UDim2.new(0,0,1,0)
+        kt.AutomaticSize=Enum.AutomaticSize.X; kt.TextXAlignment=Enum.TextXAlignment.Center
+        kt.Parent=pill; pad(kt,0,6,0,6)
+        if i<#keys then
+            local sep=Instance.new("TextLabel")
+            sep.Text="+"; sep.TextSize=sc(9); sep.Font=MONO; sep.TextColor3=T.textDim
+            sep.BackgroundTransparency=1; sep.Size=UDim2.new(0,sc(8),0,sc(20))
+            sep.LayoutOrder=i*2; sep.TextXAlignment=Enum.TextXAlignment.Center
+            sep.TextYAlignment=Enum.TextYAlignment.Center; sep.Parent=kr
+        end
+    end
+    return row
+end
+
+-- ============================================================
+-- SYSTEM DETECTION
+-- ============================================================
+local function detectExecutor()
+    -- Check common executor globals in priority order
+    if syn then return "Synapse X"
+    elseif KRNL_LOADED then return "KRNL"
+    elseif rconsole_clear then return "Script-Ware"
+    elseif fluxus then return "Fluxus"
+    elseif DELTA_KEY then return "Delta"
+    elseif getgenv and getgenv().madium then return "Madium"
+    elseif getgenv then
+        -- Attempt name from executor env
+        local ok, name = pcall(function()
+            return getgenv().__EXECUTOR__ or getgenv().EXECUTOR_NAME
+        end)
+        if ok and name then return tostring(name) end
+    end
+    return "Unknown"
+end
+
+local function detectHWID()
+    -- Madium / most executors expose this
+    local ok, id = pcall(function()
+        if typeof(get_hwid) == "function" then return get_hwid()
+        elseif typeof(gethwid) == "function" then return gethwid()
+        elseif getgenv and getgenv().HWID then return getgenv().HWID
+        end
+    end)
+    if ok and id then
+        local s = tostring(id)
+        -- Truncate for display: first 8 + "···" + last 4
+        if #s > 14 then
+            return s:sub(1,8).."···"..s:sub(-4)
+        end
+        return s
+    end
+    return "Unavailable"
+end
+
+local function detectPremium()
+    -- Placeholder — replace with your own premium verification logic
+    -- e.g. an HTTP GET to your API checking the HWID/username
+    local ok, result = pcall(function()
+        if getgenv and getgenv().LITHIUM_PREMIUM then return true end
+        return false
+    end)
+    return (ok and result) and true or false
+end
+
+local function getPlatform()
+    if IS_MOBILE then return "Mobile" end
+    if UserInputService.GamepadEnabled then return "Console" end
+    return "Desktop"
+end
+
+-- Run detections once
+local SYS = {
+    executor = detectExecutor(),
+    hwid     = detectHWID(),
+    premium  = detectPremium(),
+    platform = getPlatform(),
+    os       = "Windows", -- Roblox doesn't expose OS; best guess on desktop
+}
+
+-- ============================================================
+-- PLAYER ROW (nearby)
+-- ============================================================
+local function mkPlayerRow(p, username, dist, order)
+    local row=fr(p,UDim2.new(1,0,0,sc(28)),nil,nil,1); row.LayoutOrder=order or 0
+    local hover=fr(row,UDim2.new(1,0,1,0),nil,T.surfaceHover,1); corner(hover,4)
+    local btn=Instance.new("TextButton")
+    btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1; btn.Text=""; btn.Parent=row
+    btn.MouseEnter:Connect(function() tw(hover,{BackgroundTransparency=0},0.1) end)
+    btn.MouseLeave:Connect(function() tw(hover,{BackgroundTransparency=1},0.1) end)
+    local nl=Instance.new("TextLabel")
+    nl.Text=username; nl.TextSize=sc(12); nl.Font=UI; nl.TextColor3=T.text
+    nl.BackgroundTransparency=1; nl.Size=UDim2.new(0.65,0,1,0); nl.Position=UDim2.new(0,sc(8),0,0)
+    nl.TextXAlignment=Enum.TextXAlignment.Left; nl.TextYAlignment=Enum.TextYAlignment.Center
+    nl.ZIndex=2; nl.Parent=row
+    local dl=Instance.new("TextLabel")
+    dl.Text=dist; dl.TextSize=sc(11); dl.Font=MONO; dl.TextColor3=T.textMuted
+    dl.BackgroundTransparency=1; dl.Size=UDim2.new(0.35,-sc(8),1,0); dl.Position=UDim2.new(0.65,0,0,0)
+    dl.TextXAlignment=Enum.TextXAlignment.Right; dl.TextYAlignment=Enum.TextYAlignment.Center
+    dl.ZIndex=2; dl.Parent=row
+    return row
+end
+
+-- ============================================================
+-- ROOT GUI — full screen on mobile, windowed on desktop
+-- ============================================================
+local WIN_W = IS_MOBILE and 0 or 860   -- 0 = use Scale below
+local WIN_H = IS_MOBILE and 0 or 520
+local NAV_H = sc(44)
+
+local gui = Instance.new("ScreenGui")
+gui.Name="Lithium_Hub"; gui.ResetOnSpawn=false
+gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
+gui.DisplayOrder=999; gui.IgnoreGuiInset=true
+gui.Parent=game:GetService("CoreGui")
+
+initToast(gui)
+
+local win
+if IS_MOBILE then
+    win = fr(gui, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), T.bg)
+else
+    win = fr(gui, UDim2.new(0,WIN_W,0,WIN_H), UDim2.new(0.5,-WIN_W/2,0.5,-WIN_H/2), T.bg)
+    corner(win,8); stroke(win,T.borderDim,1)
+end
+win.ClipsDescendants = true
+
+-- ============================================================
+-- NAV BAR
+-- ============================================================
+local nav = fr(win, UDim2.new(1,0,0,NAV_H), nil, T.surface); nav.ZIndex=10
+fr(nav,UDim2.new(1,0,0,1),UDim2.new(0,0,1,-1),T.borderGhost)
+
+-- Logo
+local logoBox=fr(nav,UDim2.new(0,sc(22),0,sc(22)),UDim2.new(0,sc(14),0.5,-sc(11)),T.bg)
+corner(logoBox,4); stroke(logoBox,T.border,1)
+local lt=Instance.new("TextLabel")
+lt.Text="Li"; lt.TextSize=sc(9); lt.Font=MONO; lt.TextColor3=T.text
+lt.BackgroundTransparency=1; lt.Size=UDim2.new(1,0,1,0)
+lt.TextXAlignment=Enum.TextXAlignment.Center; lt.TextYAlignment=Enum.TextYAlignment.Center
+lt.Parent=logoBox
+
+local brandLbl=Instance.new("TextLabel")
+brandLbl.Text="LITHIUM"; brandLbl.TextSize=sc(11); brandLbl.Font=MONO
+brandLbl.TextColor3=T.text; brandLbl.BackgroundTransparency=1
+brandLbl.Size=UDim2.new(0,sc(70),1,0); brandLbl.Position=UDim2.new(0,sc(42),0,0)
+brandLbl.TextXAlignment=Enum.TextXAlignment.Left
+brandLbl.TextYAlignment=Enum.TextYAlignment.Center; brandLbl.Parent=nav
+
+-- Mobile badge in nav
+if IS_MOBILE then
+    local mob=fr(nav,UDim2.new(0,0,0,sc(18)),UDim2.new(0,sc(120),0.5,-sc(9)),T.surfaceRaise)
+    mob.AutomaticSize=Enum.AutomaticSize.X; corner(mob,3); stroke(mob,T.borderGhost,1)
+    local ml=Instance.new("TextLabel")
+    ml.Text="MOBILE"; ml.TextSize=sc(8); ml.Font=MONO; ml.TextColor3=T.textMuted
+    ml.BackgroundTransparency=1; ml.Size=UDim2.new(0,0,1,0); ml.AutomaticSize=Enum.AutomaticSize.X
+    ml.TextXAlignment=Enum.TextXAlignment.Center; ml.TextYAlignment=Enum.TextYAlignment.Center
+    ml.Parent=mob; pad(ml,0,8,0,8)
+end
+
+local navTabs=fr(nav,UDim2.new(1,-(sc(130)+sc(60)),1,0),UDim2.new(0,sc(130),0,0),nil,1)
+hlist(navTabs,2)
+
+-- Close
+local closeBtn=Instance.new("TextButton")
+closeBtn.Size=UDim2.new(0,sc(26),0,sc(26)); closeBtn.Position=UDim2.new(1,-sc(36),0.5,-sc(13))
+closeBtn.BackgroundColor3=T.surface; closeBtn.BorderSizePixel=0
+closeBtn.Text="✕"; closeBtn.TextSize=sc(11); closeBtn.TextColor3=T.textMuted
+closeBtn.Font=MONO; closeBtn.ZIndex=20; closeBtn.Parent=nav
+corner(closeBtn,4); stroke(closeBtn,T.borderDim,1)
+closeBtn.MouseEnter:Connect(function() tw(closeBtn,{TextColor3=T.danger},0.1) end)
+closeBtn.MouseLeave:Connect(function() tw(closeBtn,{TextColor3=T.textMuted},0.1) end)
+closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+makeDraggable(win,nav)
+
+-- ============================================================
+-- PAGE SYSTEM
+-- ============================================================
+local pages={}
+local activePage=nil
+local pageCount=0
+
+local function showPage(id)
+    for pid,pg in pairs(pages) do
+        pg.frame.Visible=(pid==id)
+        if pg.navBtn then
+            local active=(pid==id)
+            tw(pg.navBtn,{TextColor3=active and T.text or T.textMuted},0.12)
+            if pg.pill then tw(pg.pill,{BackgroundTransparency=active and 0 or 1},0.12) end
+        end
+    end
+    activePage=id
+end
+
+local function addPage(id, labelTxt)
+    pageCount=pageCount+1
+    local isFirst=(pageCount==1)
+
+    local btnWrap=fr(navTabs,UDim2.new(0,0,1,-sc(10)),nil,nil,1)
+    btnWrap.AutomaticSize=Enum.AutomaticSize.X
+    btnWrap.LayoutOrder=pageCount
+
+    local pill=fr(btnWrap,UDim2.new(1,0,1,0),nil,T.surfaceRaise,isFirst and 0 or 1)
+    corner(pill,5); stroke(pill,isFirst and T.borderDim or T.borderGhost,1)
+
+    local btn=Instance.new("TextButton")
+    btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1
+    btn.Text=labelTxt; btn.TextSize=sc(12); btn.Font=isFirst and BOLD or UI
+    btn.TextColor3=isFirst and T.text or T.textMuted
+    btn.AutomaticSize=Enum.AutomaticSize.X; btn.Parent=btnWrap
+    pad(btn,0,sc(14),0,sc(14))
+
+    local pg=fr(win,UDim2.new(1,0,1,-NAV_H),UDim2.new(0,0,0,NAV_H),nil,1)
+    pg.Visible=isFirst; pg.ClipsDescendants=true
+    pages[id]={frame=pg,navBtn=btn,pill=pill}
+
+    btn.MouseButton1Click:Connect(function()
+        for pid2,pg2 in pairs(pages) do
+            if pg2.navBtn then pg2.navBtn.Font=(pid2==id) and BOLD or UI end
+        end
+        showPage(id)
+    end)
+    btn.MouseEnter:Connect(function()
+        if activePage~=id then tw(btn,{TextColor3=Color3.fromRGB(180,180,180)},0.1) end
+    end)
+    btn.MouseLeave:Connect(function()
+        if activePage~=id then tw(btn,{TextColor3=T.textMuted},0.1) end
+    end)
+
+    if isFirst then activePage=id end
+    return pg
+end
+
+-- ============================================================
+-- HOME PAGE
+-- ============================================================
+local homePage=addPage("home","Home")
+pad(homePage,sc(22),sc(24),sc(22),sc(24))
+vlist(homePage,sc(14))
+
+-- Greeting
+local greetWrap=fr(homePage,UDim2.new(1,0,0,0),nil,nil,1)
+greetWrap.AutomaticSize=Enum.AutomaticSize.Y; greetWrap.LayoutOrder=1
+vlist(greetWrap,3)
+
+local hour=tonumber(os.date("%H")) or 12
+local greetWord=hour<12 and "Good morning" or hour<18 and "Good afternoon" or "Good evening"
+local displayName=LocalPlayer.DisplayName or LocalPlayer.Name
+
+local gl=Instance.new("TextLabel")
+gl.Text=greetWord..", "..displayName; gl.TextSize=sc(22); gl.Font=BOLD
+gl.TextColor3=T.text; gl.BackgroundTransparency=1
+gl.Size=UDim2.new(1,0,0,sc(28)); gl.TextXAlignment=Enum.TextXAlignment.Left; gl.Parent=greetWrap
+
+local sl=Instance.new("TextLabel")
+sl.Text="Lithium is active  ·  rightpapi"; sl.TextSize=sc(11); sl.Font=UI
+sl.TextColor3=T.textMuted; sl.BackgroundTransparency=1
+sl.Size=UDim2.new(1,0,0,sc(16)); sl.TextXAlignment=Enum.TextXAlignment.Left; sl.Parent=greetWrap
+
+-- Stat cards
+local CARD_W = IS_MOBILE
+    and math.floor((game:GetService("GuiService"):GetScreenResolution().X - sc(48) - sc(36)) / 2)
+    or  math.floor((860 - sc(48) - sc(36)) / 4)
+
+local cardsRow=fr(homePage,UDim2.new(1,0,0,sc(84)),nil,nil,1)
+cardsRow.LayoutOrder=2; hlist(cardsRow,sc(10))
+
+-- On mobile show 2 cards per row via two separate rows
+local cardsRow2
+if IS_MOBILE then
+    cardsRow.Size=UDim2.new(1,0,0,sc(84))
+    cardsRow2=fr(homePage,UDim2.new(1,0,0,sc(84)),nil,nil,1)
+    cardsRow2.LayoutOrder=3; hlist(cardsRow2,sc(10))
+end
+
+local function mkStatCard(p, topLbl, valTxt, subTxt, order, valCol)
+    local card=fr(p,UDim2.new(0,CARD_W,1,0),nil,T.surface)
+    card.LayoutOrder=order; corner(card,6); stroke(card,T.borderGhost,1)
+    pad(card,sc(12),sc(14),sc(12),sc(14))
+    local col=fr(card,UDim2.new(1,0,1,0),nil,nil,1); vlist(col,sc(4))
+    local tl=Instance.new("TextLabel")
+    tl.Text=string.upper(topLbl); tl.TextSize=sc(9); tl.Font=MONO
+    tl.TextColor3=T.textMuted; tl.BackgroundTransparency=1
+    tl.Size=UDim2.new(1,0,0,sc(12)); tl.TextXAlignment=Enum.TextXAlignment.Left; tl.Parent=col
+    local vl=Instance.new("TextLabel")
+    vl.Text=tostring(valTxt); vl.TextSize=sc(18); vl.Font=BOLD
+    vl.TextColor3=valCol or T.text; vl.BackgroundTransparency=1
+    vl.Size=UDim2.new(1,0,0,sc(24)); vl.TextXAlignment=Enum.TextXAlignment.Left; vl.Parent=col
+    local sub=Instance.new("TextLabel")
+    sub.Text=tostring(subTxt or ""); sub.TextSize=sc(10); sub.Font=UI
+    sub.TextColor3=T.textMuted; sub.BackgroundTransparency=1
+    sub.Size=UDim2.new(1,0,0,sc(14)); sub.TextXAlignment=Enum.TextXAlignment.Left; sub.Parent=col
+    return card,vl,sub
+end
+
+local placeId=tostring(game.PlaceId)
+local playerCount=tostring(#Players:GetPlayers())
+
+local _,uptVal  = mkStatCard(cardsRow,  "Uptime",     "00:00:00",   "Since attach", 1)
+local _,connVal = mkStatCard(cardsRow,  "Connection", "Active",     "Injected",     2, T.success)
+
+local row3Parent = IS_MOBILE and cardsRow2 or cardsRow
+local row4Parent = IS_MOBILE and cardsRow2 or cardsRow
+
+local _,pidVal  = mkStatCard(row3Parent,"Place ID",   placeId,      "N/A",          IS_MOBILE and 1 or 3)
+local _,plyrVal = mkStatCard(row4Parent,"Players",    playerCount,  "In server",    IS_MOBILE and 2 or 4)
+
+local startTime=tick()
+RunService.Heartbeat:Connect(function()
+    local e=math.floor(tick()-startTime)
+    uptVal.Text=string.format("%02d:%02d:%02d",math.floor(e/3600),math.floor((e%3600)/60),e%60)
+    plyrVal.Text=tostring(#Players:GetPlayers())
+end)
+
+-- ============================================================
+-- BOTTOM ROW — system info card + nearby
+-- ============================================================
+local bottomLO = IS_MOBILE and 4 or 3
+local bottomRow=fr(homePage,UDim2.new(1,0,0,0),nil,nil,1)
+bottomRow.AutomaticSize=Enum.AutomaticSize.Y
+bottomRow.LayoutOrder=bottomLO
+
+if IS_MOBILE then
+    vlist(bottomRow,sc(12))
+else
+    hlist(bottomRow,sc(12))
+    bottomRow.Size=UDim2.new(1,0,0,sc(200))
+end
+
+-- ── SYSTEM INFO CARD (replaces chart) ──────────────────────
+local sysW = IS_MOBILE and 0 or math.floor((860 - sc(48)) * 0.56)
+local sysCard=fr(bottomRow,
+    IS_MOBILE and UDim2.new(1,0,0,0) or UDim2.new(0,sysW,1,0),
+    nil, T.surface)
+if IS_MOBILE then sysCard.AutomaticSize=Enum.AutomaticSize.Y end
+sysCard.LayoutOrder=1; corner(sysCard,6); stroke(sysCard,T.borderGhost,1)
+
+-- Card header
+local sysHdr=fr(sysCard,UDim2.new(1,0,0,sc(36)),nil,nil,1)
+pad(sysHdr,0,sc(16),0,sc(16)); hlist(sysHdr,0)
+local sysHdrLbl=Instance.new("TextLabel")
+sysHdrLbl.Text="SYSTEM INFO"; sysHdrLbl.TextSize=sc(9); sysHdrLbl.Font=MONO
+sysHdrLbl.TextColor3=T.textMuted; sysHdrLbl.BackgroundTransparency=1
+sysHdrLbl.Size=UDim2.new(1,0,1,0)
+sysHdrLbl.TextXAlignment=Enum.TextXAlignment.Left
+sysHdrLbl.TextYAlignment=Enum.TextYAlignment.Center; sysHdrLbl.Parent=sysHdr
+
+fr(sysCard,UDim2.new(1,0,0,1),UDim2.new(0,0,0,sc(36)),T.borderGhost)
+
+-- Card body
+local sysBody=fr(sysCard,UDim2.new(1,0,0,0),UDim2.new(0,0,0,sc(37)),nil,1)
+sysBody.AutomaticSize=Enum.AutomaticSize.Y
+vlist(sysBody,0); pad(sysBody,sc(10),sc(16),sc(10),sc(16))
+
+-- Row builder: label on left, value + status dot on right
+local function sysRow(labelTxt, valueTxt, dotColor, order)
+    local row=fr(sysBody,UDim2.new(1,0,0,sc(32)),nil,nil,1)
+    row.LayoutOrder=order or 0
+
+    -- Subtle separator between rows
+    if order and order > 1 then
+        local sep=fr(row,UDim2.new(1,0,0,1),UDim2.new(0,0,0,0),T.borderGhost)
+        sep.ZIndex=0
+    end
+
+    local lbl2=Instance.new("TextLabel")
+    lbl2.Text=labelTxt; lbl2.TextSize=sc(10); lbl2.Font=UI
+    lbl2.TextColor3=T.textMuted; lbl2.BackgroundTransparency=1
+    lbl2.Size=UDim2.new(0.38,0,1,0)
+    lbl2.TextXAlignment=Enum.TextXAlignment.Left
+    lbl2.TextYAlignment=Enum.TextYAlignment.Center; lbl2.Parent=row
+
+    local valRow=fr(row,UDim2.new(0.62,0,1,0),UDim2.new(0.38,0,0,0),nil,1)
+    hlist(valRow,sc(6))
+    valRow.VerticalAlignment=Enum.VerticalAlignment.Center -- applied to children via layout? No, use anchor
+
+    if dotColor then
+        local dot=fr(valRow,UDim2.new(0,sc(6),0,sc(6)),nil,dotColor)
+        dot.AnchorPoint=Vector2.new(0,0.5)
+        dot.LayoutOrder=1; corner(dot,sc(3))
+    end
+
+    local vl=Instance.new("TextLabel")
+    vl.Text=valueTxt; vl.TextSize=sc(11); vl.Font=MONO
+    vl.TextColor3=dotColor or T.text; vl.BackgroundTransparency=1
+    vl.Size=UDim2.new(1,dotColor and -sc(12) or 0,1,0)
+    vl.TextXAlignment=Enum.TextXAlignment.Left
+    vl.TextYAlignment=Enum.TextYAlignment.Center
+    vl.LayoutOrder=2; vl.Parent=valRow
+
+    return row, vl
+end
+
+sysRow("Executor",  SYS.executor,        T.text,    1)
+sysRow("Platform",  SYS.platform,        T.text,    2)
+sysRow("HWID",      SYS.hwid,            T.textMuted, 3)
+divLine(sysBody, 4)
+
+-- Premium row — special treatment
+local premRow=fr(sysBody,UDim2.new(1,0,0,sc(36)),nil,nil,1); premRow.LayoutOrder=5
+local premLbl=Instance.new("TextLabel")
+premLbl.Text="Premium"; premLbl.TextSize=sc(10); premLbl.Font=UI
+premLbl.TextColor3=T.textMuted; premLbl.BackgroundTransparency=1
+premLbl.Size=UDim2.new(0.38,0,1,0)
+premLbl.TextXAlignment=Enum.TextXAlignment.Left
+premLbl.TextYAlignment=Enum.TextYAlignment.Center; premLbl.Parent=premRow
+
+local badgeColor = SYS.premium and T.success or T.borderDim
+local badgeTxt   = SYS.premium and "ACTIVE" or "INACTIVE"
+local badge=fr(premRow,UDim2.new(0,0,0,sc(20)),UDim2.new(0.38,0,0.5,-sc(10)),T.surface)
+badge.AutomaticSize=Enum.AutomaticSize.X; corner(badge,3); stroke(badge,badgeColor,1)
+local badgeLbl=Instance.new("TextLabel")
+badgeLbl.Text=badgeTxt; badgeLbl.TextSize=sc(9); badgeLbl.Font=MONO
+badgeLbl.TextColor3=badgeColor; badgeLbl.BackgroundTransparency=1
+badgeLbl.Size=UDim2.new(0,0,1,0); badgeLbl.AutomaticSize=Enum.AutomaticSize.X
+badgeLbl.TextXAlignment=Enum.TextXAlignment.Center
+badgeLbl.TextYAlignment=Enum.TextYAlignment.Center; badgeLbl.Parent=badge
+pad(badgeLbl,0,8,0,8)
+
+-- ── NEARBY CARD ─────────────────────────────────────────────
+local nearbyW = IS_MOBILE and 0 or (860 - sc(48) - sysW - sc(12))
+local nearbyCard=fr(bottomRow,
+    IS_MOBILE and UDim2.new(1,0,0,sc(200)) or UDim2.new(0,nearbyW,1,0),
+    nil,T.surface)
+nearbyCard.LayoutOrder=2; corner(nearbyCard,6); stroke(nearbyCard,T.borderGhost,1)
+
+local nearbyHdr=fr(nearbyCard,UDim2.new(1,0,0,sc(36)),nil,nil,1)
+pad(nearbyHdr,0,sc(16),0,sc(16))
+local nlbl=Instance.new("TextLabel")
+nlbl.Text="NEARBY"; nlbl.TextSize=sc(9); nlbl.Font=MONO; nlbl.TextColor3=T.textMuted
+nlbl.BackgroundTransparency=1; nlbl.Size=UDim2.new(1,0,1,0)
+nlbl.TextXAlignment=Enum.TextXAlignment.Left; nlbl.TextYAlignment=Enum.TextYAlignment.Center
+nlbl.Parent=nearbyHdr
+fr(nearbyCard,UDim2.new(1,0,0,1),UDim2.new(0,0,0,sc(36)),T.borderGhost)
+
+local nearbyScroll=mkScroll(nearbyCard,UDim2.new(1,0,1,-sc(37)),UDim2.new(0,0,0,sc(37)))
+local nearbyList=fr(nearbyScroll,UDim2.new(1,0,0,0),nil,nil,1)
+nearbyList.AutomaticSize=Enum.AutomaticSize.Y
+vlist(nearbyList,0); pad(nearbyList,sc(4),sc(12),sc(4),sc(12))
+
+local function refreshNearby()
+    for _,c in ipairs(nearbyList:GetChildren()) do
+        if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+    end
+    local lc=LocalPlayer.Character; local lr=lc and lc:FindFirstChild("HumanoidRootPart")
+    local entries={}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p~=LocalPlayer then
+            local ch=p.Character; local rt=ch and ch:FindFirstChild("HumanoidRootPart")
+            local d=(lr and rt) and math.floor((lr.Position-rt.Position).Magnitude) or 0
+            table.insert(entries,{name=p.Name,dist=d})
+        end
+    end
+    table.sort(entries,function(a,b) return a.dist<b.dist end)
+    for i,e in ipairs(entries) do mkPlayerRow(nearbyList,e.name,e.dist.."m",i) end
+    if #entries==0 then
+        local el=Instance.new("TextLabel")
+        el.Text="No other players"; el.TextSize=sc(11); el.Font=UI; el.TextColor3=T.textDim
+        el.BackgroundTransparency=1; el.Size=UDim2.new(1,0,0,sc(28))
+        el.TextXAlignment=Enum.TextXAlignment.Left; el.TextYAlignment=Enum.TextYAlignment.Center
+        el.Parent=nearbyList
+    end
+end
+refreshNearby()
+task.spawn(function() while gui.Parent do task.wait(3); refreshNearby() end end)
+
+-- ============================================================
+-- PLAYERS PAGE
+-- ============================================================
+local playersPage=addPage("players","Players")
+local plTitle=Instance.new("TextLabel")
+plTitle.Text="Players in Server"; plTitle.TextSize=sc(15); plTitle.Font=BOLD
+plTitle.TextColor3=T.text; plTitle.BackgroundTransparency=1
+plTitle.Size=UDim2.new(1,-sc(48),0,sc(24)); plTitle.Position=UDim2.new(0,sc(24),0,sc(12))
+plTitle.TextXAlignment=Enum.TextXAlignment.Left; plTitle.Parent=playersPage
+
+local plScroll=mkScroll(playersPage,UDim2.new(1,-sc(48),1,-sc(44)),UDim2.new(0,sc(24),0,sc(44)))
+local plList=fr(plScroll,UDim2.new(1,0,0,0),nil,nil,1)
+plList.AutomaticSize=Enum.AutomaticSize.Y; vlist(plList,sc(6))
+
+local function refreshPlayerList()
+    for _,c in ipairs(plList:GetChildren()) do
+        if not c:IsA("UIListLayout") then c:Destroy() end
+    end
+    local lc=LocalPlayer.Character; local lr=lc and lc:FindFirstChild("HumanoidRootPart")
+    for i,p in ipairs(Players:GetPlayers()) do
+        local card=fr(plList,UDim2.new(1,0,0,sc(46)),nil,T.surface)
+        card.LayoutOrder=i; corner(card,5); stroke(card,T.borderGhost,1); pad(card,0,sc(14),0,sc(14))
+        local dot=fr(card,UDim2.new(0,sc(6),0,sc(6)),UDim2.new(0,0,0.5,-sc(3)),
+            p==LocalPlayer and T.success or T.textDim); corner(dot,3)
+        local nameCol=fr(card,UDim2.new(0,sc(200),1,0),UDim2.new(0,sc(14),0,0),nil,1)
+        vlist(nameCol,2); pad(nameCol,sc(10),0,sc(10),0)
+        local dn=Instance.new("TextLabel")
+        dn.Text=p.DisplayName; dn.TextSize=sc(12); dn.Font=BOLD; dn.TextColor3=T.text
+        dn.BackgroundTransparency=1; dn.Size=UDim2.new(1,0,0,sc(15))
+        dn.TextXAlignment=Enum.TextXAlignment.Left; dn.Parent=nameCol
+        local un=Instance.new("TextLabel")
+        un.Text="@"..p.Name; un.TextSize=sc(10); un.Font=UI; un.TextColor3=T.textMuted
+        un.BackgroundTransparency=1; un.Size=UDim2.new(1,0,0,sc(13))
+        un.TextXAlignment=Enum.TextXAlignment.Left; un.Parent=nameCol
+        local ch=p.Character; local rt=ch and ch:FindFirstChild("HumanoidRootPart")
+        local d=(lr and rt) and math.floor((lr.Position-rt.Position).Magnitude) or 0
+        local dl=Instance.new("TextLabel")
+        dl.Text=p==LocalPlayer and "You" or d.."m"
+        dl.TextSize=sc(11); dl.Font=MONO
+        dl.TextColor3=p==LocalPlayer and T.success or T.textMuted
+        dl.BackgroundTransparency=1
+        dl.Size=UDim2.new(1,-sc(214),1,0); dl.Position=UDim2.new(0,sc(214),0,0)
+        dl.TextXAlignment=Enum.TextXAlignment.Right; dl.TextYAlignment=Enum.TextYAlignment.Center
+        dl.Parent=card
+    end
+end
+refreshPlayerList()
+task.spawn(function() while gui.Parent do task.wait(4); refreshPlayerList() end end)
+
+-- ============================================================
+-- VISUALS PAGE
+-- ============================================================
+local visualsPage=addPage("visuals","Visuals")
+local visScroll=mkScroll(visualsPage,UDim2.new(1,-sc(48),1,0),UDim2.new(0,sc(24),0,0))
+local visInner=fr(visScroll,UDim2.new(1,0,0,0),nil,nil,1)
+visInner.AutomaticSize=Enum.AutomaticSize.Y; vlist(visInner,sc(8)); pad(visInner,sc(16),0,sc(16),0)
+secLabel(visInner,"ESP",1)
+mkToggle(visInner,"Player ESP",    "Box outlines on all players",  false,2)
+mkToggle(visInner,"Health Bars",   "Show HP above player models",  false,3)
+mkToggle(visInner,"Name Tags",     "Display usernames in world",   true, 4)
+mkToggle(visInner,"Tracers",       "Lines from bottom of screen",  false,5)
+divLine(visInner,6)
+secLabel(visInner,"World",7)
+mkToggle(visInner,"Fullbright",    "Maximum ambient lighting",     false,8)
+mkToggle(visInner,"No Fog",        "Remove atmospheric fog",       true, 9)
+mkToggle(visInner,"No Shadows",    "Disable shadow rendering",     false,10)
+divLine(visInner,11)
+secLabel(visInner,"Distances",12)
+mkSlider(visInner,"ESP Distance",50,2000,500,13)
+mkSlider(visInner,"Tracer Length",1,100,50,14)
+
+-- ============================================================
+-- AIMBOT PAGE
+-- ============================================================
+local aimbotPage=addPage("aimbot","Aimbot")
+local aimScroll=mkScroll(aimbotPage,UDim2.new(1,-sc(48),1,0),UDim2.new(0,sc(24),0,0))
+local aimInner=fr(aimScroll,UDim2.new(1,0,0,0),nil,nil,1)
+aimInner.AutomaticSize=Enum.AutomaticSize.Y; vlist(aimInner,sc(8)); pad(aimInner,sc(16),0,sc(16),0)
+secLabel(aimInner,"Core",1)
+mkToggle(aimInner,"Silent Aim",    "Server-side projectile redirect",true, 2)
+mkToggle(aimInner,"Prediction",    "Lead moving targets",           false,3)
+mkToggle(aimInner,"Auto-Aim",      "Lock on while holding RMB",     false,4)
+mkToggle(aimInner,"Anti-Aim",      "Desync rotation client-side",   false,5)
+divLine(aimInner,6)
+secLabel(aimInner,"Parameters",7)
+mkSlider(aimInner,"FOV Radius",  10,300,80, 8)
+mkSlider(aimInner,"Smoothness",  1, 100,35, 9)
+mkSlider(aimInner,"Max Angle",   1, 90, 15, 10)
+divLine(aimInner,11)
+secLabel(aimInner,"Target Priority",12)
+mkToggle(aimInner,"Nearest to Crosshair","Default priority mode",   true, 13)
+mkToggle(aimInner,"Lowest Health",       "Switch at health threshold",false,14)
+
+-- ============================================================
+-- SETTINGS PAGE
+-- ============================================================
+local settingsPage=addPage("settings","Settings")
+local setScroll=mkScroll(settingsPage,UDim2.new(1,-sc(48),1,0),UDim2.new(0,sc(24),0,0))
+local setInner=fr(setScroll,UDim2.new(1,0,0,0),nil,nil,1)
+setInner.AutomaticSize=Enum.AutomaticSize.Y; vlist(setInner,sc(8)); pad(setInner,sc(16),0,sc(16),0)
+secLabel(setInner,"Interface",1)
+mkToggle(setInner,"Toast Notifications","Load & error messages",true,2)
+mkToggle(setInner,"Auto-Open on Join",  "Open menu on game load",true,3)
+divLine(setInner,4)
+secLabel(setInner,"Keybinds",5)
+mkKeybind(setInner,"Toggle Menu",   {"INSERT"},             6)
+mkKeybind(setInner,"Silent Aim",    {"RMB"},                7)
+mkKeybind(setInner,"Panic / Close", {"LCTRL","ALT","END"},  8)
+divLine(setInner,9)
+secLabel(setInner,"About",10)
+local aboutCard=fr(setInner,UDim2.new(1,0,0,0),nil,T.surface)
+aboutCard.AutomaticSize=Enum.AutomaticSize.Y; aboutCard.LayoutOrder=11
+corner(aboutCard,6); stroke(aboutCard,T.borderGhost,1); pad(aboutCard,sc(14),sc(16),sc(14),sc(16))
+local aboutCol=fr(aboutCard,UDim2.new(1,0,0,0),nil,nil,1)
+aboutCol.AutomaticSize=Enum.AutomaticSize.Y; vlist(aboutCol,sc(6))
+local function infoRow(p,k,v,order)
+    local r=fr(p,UDim2.new(1,0,0,sc(18)),nil,nil,1); r.LayoutOrder=order or 0
+    local kl=Instance.new("TextLabel")
+    kl.Text=k; kl.TextSize=sc(11); kl.Font=UI; kl.TextColor3=T.textMuted
+    kl.BackgroundTransparency=1; kl.Size=UDim2.new(0.45,0,1,0)
+    kl.TextXAlignment=Enum.TextXAlignment.Left; kl.Parent=r
+    local vl2=Instance.new("TextLabel")
+    vl2.Text=v; vl2.TextSize=sc(11); vl2.Font=MONO; vl2.TextColor3=T.text
+    vl2.BackgroundTransparency=1; vl2.Size=UDim2.new(0.55,0,1,0)
+    vl2.Position=UDim2.new(0.45,0,0,0)
+    vl2.TextXAlignment=Enum.TextXAlignment.Right; vl2.Parent=r
+end
+infoRow(aboutCol,"Creator","rightpapi",1)
+infoRow(aboutCol,"Library","Lithium UI",2)
+infoRow(aboutCol,"Executor",SYS.executor,3)
+infoRow(aboutCol,"Platform",SYS.platform,4)
+infoRow(aboutCol,"Build",os.date("%Y-%m-%d"),5)
+
+-- ============================================================
+-- INIT
+-- ============================================================
+showPage("home")
+task.delay(0.9,function()
+    _toast("Lithium dose administered.")
+end)
