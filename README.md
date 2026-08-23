@@ -9,7 +9,7 @@ Lithium Hub is a private, multi-instance script execution framework optimized fo
 To initialize the framework, execute the unified loader inside your environment. The engine will automatically verify your runtime context and stream the appropriate assets.
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/rightpapi/LithiumHub/master/source"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/rightpapi/nitremia.gg/master/Source/UI%20Libary"))()
 ```
 
 ---
