@@ -1,6 +1,6 @@
-# Lithium Hub
+# Nitremia.gg
 
-Lithium Hub is a private, multi-instance script execution framework optimized for performance, security, and seamless deployment. 
+Nitremia.gg is a private, multi-instance script execution framework optimized for performance, security, and seamless deployment. 
 
 ---
 
@@ -22,4 +22,4 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/rightpapi/nitremia.gg
 
 ---
 
-© 2026 Lithium.gg. All rights reserved.
+© 2026 Nitremia.gg. All rights reserved.
