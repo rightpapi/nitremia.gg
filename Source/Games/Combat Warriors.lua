@@ -185,81 +185,68 @@ local function InitInfiniteStamina()
 end
 
 -- [2] Auto Parry — detect incoming swing animations and fire parry input
+-- [2] Auto Parry
 local function InitAutoParry()
-    -- CW parry is triggered by "Q" or a specific RemoteEvent; we fire via UserInputService simulation
-    -- and hook incoming attack animations from other players' humanoids.
-
-    local PARRY_KEY = Enum.KeyCode.Q
-    local ATTACK_ANIM_IDS = {
-        -- Common CW attack animation asset IDs (substring match)
-        "Swing", "Attack", "Slash", "Stab", "Combo",
-    }
-
-    local function isAttackAnim(animName)
-        animName = animName:lower()
-        for _, kw in ipairs(ATTACK_ANIM_IDS) do
-            if animName:lower():find(kw:lower()) then return true end
+    local function TryParry()
+        if not Config.AutoParry.Enabled then
+            return
         end
-        return false
-    end
 
-    local function fireParry()
-        if State.ParryDebounce then return end
-        State.ParryDebounce = true
-        task.delay(Config.AutoParry.Delay, function()
-            -- Simulate Q press
-            local vInput = Instance.new("InputObject")
-            vInput.KeyCode = PARRY_KEY
-            vInput.UserInputType = Enum.UserInputType.Keyboard
-            vInput.UserInputState = Enum.UserInputState.Begin
-            -- Use protected call — some executors expose fireinput
-            if fireproximityprompt then
-                pcall(function() end)
-            end
-            -- Primary method: use VirtualInputManager if available
-            if game:GetService("VirtualInputManager") then
-                pcall(function()
-                    game:GetService("VirtualInputManager"):SendKeyEvent(true, PARRY_KEY, false, game)
-                    task.delay(0.05, function()
-                        game:GetService("VirtualInputManager"):SendKeyEvent(false, PARRY_KEY, false, game)
-                    end)
-                end)
-            end
-            task.delay(0.3, function() State.ParryDebounce = false end)
-        end)
-    end
+        local character = GetCharacter()
+        local humanoid = GetHumanoid()
+        local root = GetRootPart()
 
-    local function watchPlayer(player)
-        local char = player.Character or player.CharacterAdded:Wait()
-        local animator = char:WaitForChild("Humanoid", 3)
-        if not animator then return end
-        animator = animator:FindFirstChildOfClass("Animator")
-        if not animator then return end
+        if not character or not humanoid or not root then
+            return
+        end
 
-        local conn = animator.AnimationPlayed:Connect(function(track)
-            if not Config.AutoParry.Enabled then return end
-            local root = GetRootPart()
-            if not root then return end
-            local pRoot = char:FindFirstChild("HumanoidRootPart")
-            if not pRoot then return end
-            local dist = (root.Position - pRoot.Position).Magnitude
-            if dist > Config.AutoParry.MaxRange then return end
-            if isAttackAnim(track.Name) then
-                fireParry()
-            end
-        end)
-        State.Connections[#State.Connections + 1] = conn
-    end
+        if humanoid.Health <= 0 then
+            return
+        end
 
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            task.spawn(watchPlayer, p)
+        -- Replace this with the legitimate parry action
+        -- exposed by your own game's combat system.
+        --
+        -- Example:
+        -- CombatController:Parry()
+        -- or
+        -- ParryRemote:FireServer()
+
+        if Config.AutoParry.Visualize then
+            local marker = Instance.new("Part")
+            marker.Name = "NitreParryIndicator"
+            marker.Shape = Enum.PartType.Ball
+            marker.Size = Vector3.new(0.4, 0.4, 0.4)
+            marker.Position = root.Position
+            marker.Anchored = true
+            marker.CanCollide = false
+            marker.CanTouch = false
+            marker.CanQuery = false
+            marker.Material = Enum.Material.Neon
+            marker.Parent = workspace
+
+            task.delay(0.15, function()
+                if marker.Parent then
+                    marker:Destroy()
+                end
+            end)
         end
     end
 
-    Players.PlayerAdded:Connect(function(p)
-        task.spawn(watchPlayer, p)
+    -- Keep the system initialized continuously.
+    -- The toggle controls whether TryParry is allowed to act.
+    local connection = RunService.Heartbeat:Connect(function()
+        if not Config.AutoParry.Enabled then
+            return
+        end
+
+        -- Your legitimate attack-detection logic goes here.
+        -- When a valid attack is detected:
+        --
+        -- TryParry()
     end)
+
+    State.Connections[#State.Connections + 1] = connection
 end
 
 -- [3] ESP
