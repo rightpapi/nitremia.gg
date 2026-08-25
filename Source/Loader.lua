@@ -5,14 +5,11 @@
 
 local BASE_URL = "https://raw.githubusercontent.com/rightpapi/nitremia.gg/master/Source/Games/"
 
--- PlaceId → filename inside Source/Games/
 local PLACES = {
-    [4282985734] = "CombatWarriors.lua",
+    [11979319180] = "Combat Warriors.lua",
 }
-
--- UniverseId / GameId → filename inside Source/Games/
 local GAMES = {
-    [1390601379] = "CombatWarriors.lua",
+    [1390601379] = "Combat Warriors.lua",
 }
 
 local placeId = game.PlaceId
