@@ -7,6 +7,15 @@ local UserInputService = game:GetService("UserInputService")
 local RunService       = game:GetService("RunService")
 local LocalPlayer      = Players.LocalPlayer
 
+-- CoreGui fallback for executors that block CoreGui access (e.g. Delta mobile)
+local _CoreGui = game:GetService("CoreGui")
+local _guiParent
+if pcall(function() Instance.new("Frame", _CoreGui):Destroy() end) then
+    _guiParent = _CoreGui
+else
+    _guiParent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
 -- ============================================================
 -- MOBILE DETECTION
 -- ============================================================
@@ -408,7 +417,7 @@ local gui=Instance.new("ScreenGui")
 gui.Name="Nitremia_Hub"; gui.ResetOnSpawn=false
 gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder=999; gui.IgnoreGuiInset=true
-gui.Parent=game:GetService("CoreGui")
+gui.Parent=_guiParent
 
 initToast(gui)
 
@@ -962,7 +971,7 @@ end
 Players.PlayerAdded:Connect(function(p) task.spawn(watchForAttacks,p) end)
 
 -- [3] ESP
-local CoreGui=game:GetService("CoreGui")
+local CoreGui=_CoreGui
 local function clearESP(player)
     local obj=CWState.espObjects[player]
     if obj then for _,v in pairs(obj) do pcall(function() v:Destroy() end) end end
