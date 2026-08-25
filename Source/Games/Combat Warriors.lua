@@ -1,5 +1,8 @@
 -- Nitremia UI · Hub (System Info + Mobile)
 -- Creator: rightpapi
+-- Wait for game to fully initialize before running
+repeat task.wait() until game:IsLoaded() and Color3
+
 
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
@@ -1261,3 +1264,4 @@ end
 showPage("home")
 task.delay(0.9,function()
     _toast("Systems successfully saturated.")
+end)
