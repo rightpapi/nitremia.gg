@@ -878,8 +878,9 @@ local function getEnemies(teamCheck)
     local out={}
     for _,p in ipairs(Players:GetPlayers()) do
         if p~=LocalPlayer then
-            if teamCheck and p.Team==LocalPlayer.Team then continue end
-            out[#out+1]=p
+            if not (teamCheck and p.Team==LocalPlayer.Team) then
+                out[#out+1]=p
+            end
         end
     end
     return out
@@ -994,14 +995,17 @@ RunService.RenderStepped:Connect(function()
     end
     local myRoot=getRoot()
     for _,p in ipairs(Players:GetPlayers()) do
-        if p==LocalPlayer then continue end
-        if CFG.espTeamCheck and p.Team==LocalPlayer.Team then clearESP(p); continue end
+        if p~=LocalPlayer then
+        if CFG.espTeamCheck and p.Team==LocalPlayer.Team then clearESP(p)
+        else
         local char=p.Character
         local root=char and char:FindFirstChild("HumanoidRootPart")
         local hum=char and char:FindFirstChildOfClass("Humanoid")
-        if not char or not root or not hum or not myRoot then clearESP(p); continue end
+        if not char or not root or not hum or not myRoot then clearESP(p)
+        else
         local dist=(myRoot.Position-root.Position).Magnitude
-        if dist>CFG.espMaxDist then clearESP(p); continue end
+        if dist>CFG.espMaxDist then clearESP(p)
+        else
         if not CWState.espObjects[p] then buildESP(p) end
         local obj=CWState.espObjects[p]
         obj.hl.Adornee=char; obj.hl.Enabled=CFG.espBox
@@ -1014,6 +1018,7 @@ RunService.RenderStepped:Connect(function()
             if CFG.espDist   then parts[#parts+1]=string.format("%dm",math.floor(dist)) end
             il.Text=table.concat(parts,"  "); il.Visible=#parts>0
         end
+        end end end end -- close: dist, char/root/hum, teamCheck, LocalPlayer
     end
     for p in pairs(CWState.espObjects) do if not p.Parent then clearESP(p) end end
 end)
